@@ -18,6 +18,11 @@ Use the existing `.env`, or copy `.env.example` to `.env.local` and fill in
 panel. `.env.local` takes precedence over `.env`. Restart Vite after changes.
 Use a publishable key in the frontend, never a secret or service-role key.
 
+Backend handlers can use `@supabase/server` with `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and `SUPABASE_JWKS_URL`.
+Keep `SUPABASE_SECRET_KEY` server-only and paste the real value into local or
+hosting-provider environment settings, not into browser-exposed `VITE_*` values.
+
 ```js
 import { createClient } from '@/lib/client'
 

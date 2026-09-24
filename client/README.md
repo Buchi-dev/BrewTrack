@@ -1,16 +1,63 @@
-# React + Vite
+# BrewTrack frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite, Tailwind CSS 4, and shadcn/ui using Base UI and the Nova preset.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```powershell
+npm install
+npm run dev
+```
 
-## React Compiler
+Vite prints the local URL (normally http://localhost:5173).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Supabase
 
-## Expanding the ESLint configuration
+Use the existing `.env`, or copy `.env.example` to `.env.local` and fill in
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from your project's Connect
+panel. `.env.local` takes precedence over `.env`. Restart Vite after changes.
+Use a publishable key in the frontend, never a secret or service-role key.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```js
+import { createClient } from '@/lib/client'
+
+const supabase = createClient()
+```
+
+The browser helper reuses the Supabase browser client. It is ready for Auth,
+database queries, Storage, and Realtime. Database access requires tables,
+grants, and Row Level Security policies appropriate to your application.
+
+The installed `@supabase/supabase-client-react-router` registry also supplies
+`src/lib/server.js`. This is reserved for a future React Router server runtime;
+do not import it into browser components. This project currently uses a Vite SPA,
+so server rendering and React Router routes are not configured.
+
+Before adding email or OAuth login, configure the site URL and allowed redirect
+URLs in Supabase Authentication > URL Configuration for local and production use.
+
+## Add UI components
+
+```powershell
+npx shadcn@latest add button
+```
+
+`components.json` generates JavaScript components. The `@/` alias points to `src/`
+in both Vite and the editor. Tailwind 4 uses the Vite plugin and CSS configuration;
+it does not need a `tailwind.config.js` file.
+
+## Verify
+
+```powershell
+npm run lint
+npm run build
+npm run supabase:check
+```
+
+The Supabase check makes read-only requests to Auth settings and a nonexistent
+Data API table. The expected missing-table response confirms that the public key
+reaches the API; it does not verify access to application tables, table policies,
+or a complete sign-in flow. Pass `-- production` to check production env files.
+
+References: [shadcn Vite setup](https://ui.shadcn.com/docs/installation/vite),
+[Supabase React setup](https://supabase.com/docs/guides/getting-started/quickstarts/reactjs).

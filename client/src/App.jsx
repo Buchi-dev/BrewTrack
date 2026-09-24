@@ -1,122 +1,140 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useCallback, useEffect, useState } from 'react'
+import { Activity, ArrowDownToLine, ArrowRight, ArrowUpRight, Bell, Building2, CalendarDays, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3, Coffee, FileBarChart2, LayoutDashboard, LogOut, Menu, Plus, Search, Settings2, ShieldCheck, Users, X, UserRound, LoaderCircle, MapPin, CheckCheck, RefreshCw } from 'lucide-react'
+import { createClient, configured } from './lib/client'
+import { loadWorkspace, saveEntity } from './lib/api'
+import { makeDemo } from './lib/demo'
+import { dailyRows, dateKey, dayLabel, downloadCsv, filterRecords, initials, timeLabel } from './lib/attendance'
+import CameraCapture, { Modal } from './components/CameraCapture'
+import PhotoReview from './components/PhotoReview'
+import './index.css'
 
+const managerNav = [['Overview', LayoutDashboard], ['Daily attendance', CalendarDays], ['Attendance records', Clock3], ['Employees', Users], ['Branches', Building2], ['Reports', FileBarChart2]]
+const employeeNav = [['My dashboard', LayoutDashboard], ['My attendance', Clock3], ['My profile', UserRound]]
+const descriptions = { Overview: 'A little clarity for your everyday operations.', 'Daily attendance': 'Every check-in, every shift, all in one place.', 'Attendance records': 'A reliable record of every moment that matters.', Employees: 'Good teams start with knowing your people.', Branches: 'Keep your locations connected and in sync.', Reports: 'Turn attendance into actionable insights.', 'My dashboard': 'Your shift starts here. Make today a good one.', 'My attendance': 'Your attendance, clearly recorded.', 'My profile': 'Your information and branch assignment.' }
+const statusText = { 'on-time': 'On time', late: 'Late', completed: 'Completed' }
+const blankFilters = { search: '', branch: '', start: '', end: '', status: '', type: '' }
+function Badge({ children }) { return <span className={`badge ${String(children).toLowerCase().replaceAll(' ', '-')}`}><span/>{children}</span> }
+function Avatar({ name, small }) { return <span className={`avatar ${small ? 'small' : ''}`} style={{ '--avatar-hue': [...(name || '')].reduce((n, c) => n + c.charCodeAt(0), 0) % 65 + 145 }}>{initials(name)}</span> }
+function Empty({ title = 'No records found', text = 'Try another date or adjust your filters.' }) { return <div className="empty"><Search size={27}/><h3>{title}</h3><p>{text}</p></div> }
+function SearchBox({ value, onChange, placeholder = 'Search employees…' }) { return <div className="search-box"><Search size={17}/><input aria-label={placeholder} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}/>{value && <button className="icon-button" aria-label="Clear search" onClick={() => onChange('')}><X size={14}/></button>}</div> }
+function StatCard({ label, value, icon: Icon, detail, tone }) { return <div className={`stat-card ${tone || ''}`}><div className="stat-top"><span>{label}</span><span className="stat-icon"><Icon size={19}/></span></div><div className="stat-number">{value}<span className="mini-bars">{[30,48,37,66,48,77,65,93].map((v, i) => <i key={i} style={{ height: `${v}%` }}/>)}</span></div><div className="stat-detail">{detail}</div></div> }
+function Pagination({ page, setPage, count, size = 8 }) { const total = Math.max(1, Math.ceil(count / size)); return <div className="pagination"><span>Showing {count ? (page - 1) * size + 1 : 0}–{Math.min(page * size, count)} of {count} records</span><div><button className="button" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft size={15}/>Previous</button><span className="page-number">{page} / {total}</span><button className="button" disabled={page >= total} onClick={() => setPage(page + 1)}>Next<ChevronRight size={15}/></button></div></div> }
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+export default function App() {
+  const [data, setData] = useState(makeDemo)
+  const [demo, setDemo] = useState(true)
+  const [user, setUser] = useState(null)
+  const [page, setPage] = useState('Overview')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [toast, setToast] = useState('')
+  const [modal, setModal] = useState(null)
+  const [mobile, setMobile] = useState(false)
+  const [branch, setBranch] = useState('')
+  const [date, setDate] = useState(dateKey)
+  const [search, setSearch] = useState('')
+  const [tab, setTab] = useState('All employees')
+  const [tablePage, setTablePage] = useState(1)
+  const [filters, setFilters] = useState(blankFilters)
+  const isManager = data.profile?.role !== 'employee'
+  const employee = data.employees.find(e => e.id === data.profile?.id)
+  const branchName = id => data.branches.find(b => b.id === id)?.name || 'Unassigned'
+  const nav = isManager ? managerNav : employeeNav
+  const rows = dailyRows(data.employees, data.records, date, data.branches).filter(r => !branch || r.branch_id === branch)
+  const present = rows.filter(r => r.clockIn).length
+  const late = rows.filter(r => r.clockIn?.status === 'late').length
+  const missing = rows.filter(r => !r.clockIn).length
+  const notify = useCallback(message => setToast(message), [])
+  const refresh = useCallback(async (sessionUser) => {
+    setLoading(true); setError('')
+    try { const next = await loadWorkspace(sessionUser); setData(next); setPage(next.profile.role === 'employee' ? 'My dashboard' : 'Overview') }
+    catch (e) { setError(`Could not load your workspace. ${e.message}. Check that your profile and database migration are set up.`) }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => {
+    if (!configured) return
+    let alive = true
+    const apply = session => {
+      if (!alive || !session?.user) return
+      setUser(session.user); setDemo(false); setData({ profile: null, employees: [], branches: [], records: [] }); refresh(session.user)
+    }
+    createClient().auth.getSession().then(({ data: value, error: authError }) => { if (authError && alive) setError(authError.message); else apply(value.session) })
+    const { data: sub } = createClient().auth.onAuthStateChange((event, session) => { if (event === 'SIGNED_IN') setTimeout(() => apply(session), 0); if (event === 'SIGNED_OUT' && alive) { setUser(null); setDemo(true); setData(makeDemo()); setPage('Overview') } })
+    return () => { alive = false; sub.subscription.unsubscribe() }
+  }, [refresh])
+  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 4500); return () => clearTimeout(timer) }, [toast])
+  function navigate(value) { setPage(value); setMobile(false); setSearch(''); setTab('All employees'); setTablePage(1) }
+  function exportRecords(records = filterRecords(data.records, filters)) {
+    downloadCsv([['Employee ID', 'Employee', 'Branch', 'Date', 'Transaction', 'Official timestamp', 'Status', 'Evidence reference'], ...records.map(r => [r.employee_id, r.employee_name, r.branch_name, r.attendance_date, r.transaction_type, r.official_timestamp, r.status, r.photo_path])], `brewtrack-attendance-${dateKey()}.csv`)
+    notify(`Exported ${records.length} attendance records.`)
+  }
+  function exportDaily() { downloadCsv([['Employee', 'Code', 'Branch', 'Date', 'Clock in', 'Clock out', 'Status'], ...rows.map(r => [r.name, r.code, branchName(r.branch_id), date, r.clockIn?.official_timestamp, r.clockOut?.official_timestamp, r.status])], `brewtrack-daily-${date}.csv`); notify('Daily attendance exported.') }
+  async function signOut() { if (demo) { setModal({ type: 'login' }); return } const { error: signOutError } = await createClient().auth.signOut(); if (signOutError) notify(signOutError.message) }
+  function switchDemo() { const next = makeDemo(); if (isManager) { next.profile = { ...next.employees[0], role: 'employee' }; next.records = next.records.filter(r => r.employee_id === next.profile.id && r.attendance_date !== dateKey()); next.employees = [next.employees[0]] } setData(next); setPage(isManager ? 'My dashboard' : 'Overview'); setBranch(''); setTablePage(1) }
+  const displayedRows = rows.filter(r => r.name.toLowerCase().includes(search.toLowerCase()) && (tab === 'All employees' || (tab === 'On time' && r.clockIn?.status === 'on-time') || (tab === 'Late' && r.clockIn?.status === 'late') || (tab === 'Not clocked in' && !r.clockIn)))
+  const attentionRows = rows.filter(r => !r.clockIn || r.status === 'Missing clock-out' || r.clockIn?.status === 'late')
+  function dailyTable(compact = false) {
+    return <section className="panel attendance-panel"><div className="panel-heading"><div><h2>{compact ? 'Today’s attendance' : 'Daily attendance'} <span className="count-bubble">{rows.length}</span></h2><p>{compact ? 'Your team’s check-ins, together in one place.' : `${dayLabel(date)} · Philippine time`}</p></div>{compact ? <button className="text-button" onClick={() => navigate('Daily attendance')}>View all attendance<ArrowRight size={16}/></button> : <button className="button" onClick={exportDaily}><ArrowDownToLine size={16}/>Export</button>}</div>
+      <div className="table-toolbar"><div className="tabs">{['All employees', 'On time', 'Late', 'Not clocked in'].map(t => <button key={t} className={tab === t ? 'active' : ''} onClick={() => { setTab(t); setTablePage(1) }}>{t}{t === 'Late' && <span>{late}</span>}</button>)}</div><SearchBox value={search} onChange={v => { setSearch(v); setTablePage(1) }}/></div>
+      <div className="table-scroll"><table><thead><tr><th>Employee</th><th>Branch</th><th>Clock in</th><th>Clock out</th><th>Status</th><th className="align-right">Selfie</th></tr></thead><tbody>{displayedRows.slice((tablePage - 1) * 8, tablePage * 8).map(r => <tr key={r.id}><td><div className="person"><Avatar name={r.name}/><div><strong>{r.name}</strong><small>{r.code} · {r.position}</small></div></div></td><td><span className="branch-dot"/>{branchName(r.branch_id)}</td><td className={r.clockIn?.status === 'late' ? 'late-time' : ''}>{timeLabel(r.clockIn?.official_timestamp)}{r.clockIn?.status === 'late' && <small className="late-note">After shift start</small>}</td><td>{timeLabel(r.clockOut?.official_timestamp)}</td><td><Badge>{r.status}</Badge></td><td className="align-right"><button className="photo-button" aria-label={`View selfie for ${r.name}`} disabled={!r.clockIn} onClick={() => setModal({ type: 'photo', record: r.clockIn })}><Camera size={16}/>{r.clockIn && <span/>}</button></td></tr>)}</tbody></table>{!displayedRows.length && <Empty/>}</div><Pagination page={tablePage} setPage={setTablePage} count={displayedRows.length}/></section>
+  }
+  function recordTable() {
+    const visible = filterRecords(data.records, filters)
+    return <section className="panel"><div className="panel-heading"><div><h2>{page === 'Reports' ? 'Attendance report' : 'Attendance history'}</h2><p>{visible.length} matching transactions · timestamps in Philippine time</p></div><button className="button primary" onClick={() => exportRecords(visible)}><ArrowDownToLine size={16}/>Export CSV</button></div><div className="record-filters"><SearchBox value={filters.search} onChange={v => updateFilter('search', v)}/><select aria-label="Filter branch" value={filters.branch} onChange={e => updateFilter('branch', e.target.value)}><option value="">All branches</option>{data.branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select><label>From<input type="date" aria-label="From date" value={filters.start} onChange={e => updateFilter('start', e.target.value)}/></label><label>To<input type="date" aria-label="To date" min={filters.start} value={filters.end} onChange={e => updateFilter('end', e.target.value)}/></label><select aria-label="Filter status" value={filters.status} onChange={e => updateFilter('status', e.target.value)}><option value="">All statuses</option><option value="on-time">On time</option><option value="late">Late</option><option value="completed">Completed</option></select><select aria-label="Transaction type" value={filters.type} onChange={e => updateFilter('type', e.target.value)}><option value="">All transactions</option><option value="clock-in">Clock in</option><option value="clock-out">Clock out</option></select><button className="text-button" onClick={() => { setFilters(blankFilters); setTablePage(1) }}>Reset filters</button></div>{filters.start && filters.end && filters.start > filters.end && <div className="error">End date must be on or after start date.</div>}<div className="table-scroll"><table><thead><tr><th>Employee</th><th>Date & time</th><th>Branch</th><th>Transaction</th><th>Status</th><th>Evidence</th></tr></thead><tbody>{visible.slice((tablePage - 1) * 8, tablePage * 8).map(r => <tr key={r.id}><td><div className="person"><Avatar name={r.employee_name}/><strong>{r.employee_name}</strong></div></td><td>{dayLabel(r.attendance_date)}<small>{timeLabel(r.official_timestamp)}</small></td><td>{r.branch_name}</td><td><span className="transaction"><Clock3 size={14}/>{r.transaction_type === 'clock-in' ? 'Clock in' : 'Clock out'}</span></td><td><Badge>{statusText[r.status]}</Badge></td><td><button className="text-button" onClick={() => setModal({ type: 'photo', record: r })}><Camera size={16}/>View selfie</button></td></tr>)}</tbody></table>{!visible.length && <Empty/>}</div><Pagination page={tablePage} setPage={setTablePage} count={visible.length}/></section>
+  }
+  function updateFilter(key, value) { setFilters(f => ({ ...f, [key]: value })); setTablePage(1) }
+  return <div className="app-shell">
+    {mobile && <div className="sidebar-backdrop" onClick={() => setMobile(false)}/>}
+    <aside className={`sidebar ${mobile ? 'open' : ''}`}><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate(isManager ? 'Overview' : 'My dashboard') }}><span className="brand-mark"><Coffee size={23}/></span>brewtrack<span className="brand-period">.</span></a><div className="workspace-switch"><span className="workspace-logo">B</span><div><strong>Brew Collective</strong><small>Workforce workspace</small></div><ChevronDown size={15}/></div><div className="nav-label">WORKSPACE</div><nav>{nav.map(([name, Icon]) => <button className={page === name ? 'active' : ''} key={name} onClick={() => navigate(name)}><Icon size={19}/><span>{name}</span>{name === 'Daily attendance' && <span className="nav-count">{data.employees.filter(e => e.active).length}</span>}</button>)}</nav><div className="sidebar-bottom"><div className="trust-card"><span className="trust-icon"><ShieldCheck size={20}/></span><strong>Every check-in counts.</strong><p>A trusted team starts with<br/>attendance you can trust.</p><button onClick={() => setModal({ type: 'help' })}>How it works<ArrowUpRight size={14}/></button></div><button className="utility-button" onClick={() => setModal({ type: 'help' })}><CircleHelp size={18}/>Help & getting started</button><button className="utility-button" onClick={() => setModal({ type: 'settings' })}><Settings2 size={18}/>Workspace settings</button><div className="sidebar-user"><Avatar name={data.profile?.name || 'Workspace'}/><div><strong>{data.profile?.name || 'Loading profile'}</strong><small>{demo ? 'Demo ' : ''}{data.profile?.role === 'admin' ? 'Administrator' : data.profile?.role || 'Account'}</small></div><button className="icon-button" aria-label={demo ? 'Sign in' : 'Sign out'} onClick={signOut}><LogOut size={17}/></button></div></div></aside>
+    <div className="main-shell"><header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobile(true)}><Menu size={21}/></button><span>Workspace</span><ChevronRight size={14}/><strong>{page}</strong></div><div className="topbar-right">{demo ? <><span className="demo-badge"><span/>Demo workspace</span><button className="text-button" onClick={() => setModal({ type: 'login' })}>Sign in<ArrowRight size={15}/></button></> : <span className="live-badge"><span/>Connected</span>}<span className="topbar-divider"/><button className="icon-button notification-button" aria-label="View attendance alerts" onClick={() => setModal({ type: 'alerts' })}><Bell size={19}/>{attentionRows.length > 0 && <i/>}</button><Avatar name={data.profile?.name} small/></div></header>
+    <main><div className="page-heading"><div><div className="eyebrow">{isManager ? 'YOUR PEOPLE, AT A GLANCE' : 'A GOOD DAY STARTS HERE'}</div><h1>{page === 'Overview' ? `Welcome back, ${data.profile?.name?.split(' ')[0] || 'there'}` : page}<span className="heading-dot">.</span></h1><p>{descriptions[page]}</p></div><div className="heading-actions">{['Overview', 'Daily attendance'].includes(page) && <><div className="date-control"><CalendarDays size={16}/><input aria-label="Attendance date" type="date" max={dateKey()} value={date} onChange={e => { if (e.target.value) { setDate(e.target.value); setTablePage(1) } }}/></div><button className="button primary" onClick={exportDaily}><ArrowDownToLine size={17}/>Export report</button></>}{page === 'Employees' && <button className="button primary" onClick={() => setModal({ type: 'employee' })}><Plus size={17}/>Add employee</button>}{page === 'Branches' && data.profile?.role === 'admin' && <button className="button primary" onClick={() => setModal({ type: 'branch' })}><Plus size={17}/>Add branch</button>}</div></div>
+    {error && <div className="error" role="alert">{error}<button className="text-button" onClick={() => user && refresh(user)}>Retry</button></div>}
+    {loading ? <div className="loading"><LoaderCircle className="spin" size={30}/><p>Loading your workspace…</p></div> : !demo && !data.profile ? <Empty title="Workspace setup required" text="Ask your administrator to create your profile, then retry."/> : <>
+    {['Overview', 'Daily attendance'].includes(page) && <><div className="overview-controls"><div className="section-label"><span className="live-dot"/>{date === dateKey() ? 'Today’s overview' : dayLabel(date)}<span className="muted">All times in PHT</span></div><select aria-label="Overview branch" value={branch} onChange={e => { setBranch(e.target.value); setTablePage(1) }}><option value="">All branches</option>{data.branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div><div className="stats-grid"><StatCard label="Total employees" value={rows.length} icon={Users} detail={<><span className="positive">Active workforce</span><span> across {branch ? 1 : data.branches.length} branches</span></>}/><StatCard label="Present today" value={present} icon={CheckCheck} tone="green" detail={<><span className="positive">{rows.length ? Math.round(present / rows.length * 100) : 0}%</span><span> of your team checked in</span></>}/><StatCard label="Late arrivals" value={late} icon={Clock3} tone="amber" detail={<><span className="amber-text">{late ? 'Needs a little attention' : 'Right on schedule'}</span></>}/><StatCard label="Not clocked in" value={missing} icon={UserRound} tone="gray" detail={<><span className="muted">{missing ? 'Still waiting for a check-in' : 'Everyone is accounted for'}</span></>}/></div></>}
+    {page === 'Overview' && <><div className="insights-grid"><section className="panel trend-panel"><div className="panel-heading"><div><h2>Attendance trends</h2><p>Consistency looks good on your team.</p></div><span className="period-pill">Last 7 days<ChevronDown size={13}/></span></div><div className="chart-legend"><span><i className="legend-on"/>On time</span><span><i className="legend-late"/>Late</span><span><i className="legend-absent"/>Not clocked in</span></div><div className="chart"><div className="chart-axis">{[100,75,50,25,0].map(n => <span key={n}>{n}%</span>)}</div><div className="chart-plot"><div className="chart-lines">{[0,1,2,3,4].map(n => <i key={n}/>)}</div><div className="chart-bars">{Array.from({ length: 7 }, (_, i) => { const day = new Date(`${date}T12:00:00+08:00`); day.setDate(day.getDate() - 6 + i); const key = dateKey(day); const dayRows = dailyRows(data.employees, data.records, key, data.branches).filter(r => !branch || r.branch_id === branch); const all = dayRows.length || 1; const onTime = dayRows.filter(r => r.clockIn?.status === 'on-time').length / all * 100; const tardy = dayRows.filter(r => r.clockIn?.status === 'late').length / all * 100; return <div className={`chart-day ${i === 6 ? 'current' : ''}`} key={key}><div className="bar-stack" title={`${key}: ${Math.round(onTime)}% on time, ${Math.round(tardy)}% late`}><div className="bar-absent" style={{ height: `${100 - onTime - tardy}%` }}/><div className="bar-late" style={{ height: `${tardy}%` }}/><div className="bar-on" style={{ height: `${onTime}%` }}/></div><span>{day.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Manila' })}</span></div> })}</div></div></div><div className="chart-footer"><span><Activity size={15}/> A consistent team is a stronger team.</span><button className="text-button" onClick={() => navigate('Reports')}>Explore reports<ArrowUpRight size={15}/></button></div></section>
+    <section className="panel branch-panel"><div className="panel-heading"><div><h2>Across your branches</h2><p>Different places. One team.</p></div><Building2 size={19}/></div><div className="branch-progress-list">{data.branches.filter(b => !branch || b.id === branch).map(b => { const team = rows.filter(r => r.branch_id === b.id); const checked = team.filter(r => r.clockIn).length; return <div className="branch-progress" key={b.id}><div><span><span className="branch-dot"/>{b.name}</span><strong>{checked}<small> / {team.length}</small></strong></div><div className="progress-track"><span style={{ width: `${team.length ? checked / team.length * 100 : 0}%` }}/></div></div> })}</div><button className="branch-footer" onClick={() => navigate('Branches')}>Manage branches<ArrowRight size={16}/></button></section></div>{dailyTable(true)}</>}
+    {page === 'Daily attendance' && dailyTable()}
+    {['Attendance records', 'My attendance', 'Reports'].includes(page) && <>{page === 'Reports' && <div className="report-intro"><span className="report-icon"><FileBarChart2 size={25}/></span><div><h3>Ready for your next payroll run.</h3><p>Filter transactions below and export the exact records you need. For missing check-ins and check-outs, use the daily attendance report.</p></div><button className="button" onClick={() => navigate('Daily attendance')}>Daily summary<ArrowRight size={16}/></button></div>}{recordTable()}</>}
+    {page === 'Employees' && <section className="panel"><div className="panel-heading"><div><h2>Your team <span className="count-bubble">{data.employees.length}</span></h2><p>Manage employee details and branch assignments.</p></div><SearchBox value={search} onChange={setSearch}/></div><div className="table-scroll"><table><thead><tr><th>Employee</th><th>Branch</th><th>Position</th><th>Status</th><th className="align-right">Action</th></tr></thead><tbody>{data.employees.filter(e => `${e.name} ${e.code}`.toLowerCase().includes(search.toLowerCase())).map(e => <tr key={e.id}><td><div className="person"><Avatar name={e.name}/><div><strong>{e.name}</strong><small>{e.code} · {e.email}</small></div></div></td><td>{branchName(e.branch_id)}</td><td>{e.position}</td><td><Badge>{e.active ? 'Active' : 'Inactive'}</Badge></td><td className="align-right"><button className="text-button" onClick={() => setModal({ type: 'employee', entity: e })}>Edit employee<ArrowUpRight size={14}/></button></td></tr>)}</tbody></table>{!data.employees.length && <Empty title="Your team starts here" text="Add an employee to connect their account and branch."/>}</div></section>}
+    {page === 'Branches' && <div className="branches-grid">{data.branches.map(b => <section className="panel branch-card" key={b.id}><div className="branch-card-top"><span className="branch-card-icon"><Building2 size={25}/></span><Badge>{b.active ? 'Active' : 'Inactive'}</Badge></div><h2>{b.name}</h2><p><MapPin size={15}/>{b.address}</p><div className="branch-card-stats"><div><strong>{data.employees.filter(e => e.branch_id === b.id && e.active).length}</strong><small>Team members</small></div><div><strong>{b.shift_start.slice(0,5)}–{b.shift_end.slice(0,5)}</strong><small>Daily shift · PHT</small></div></div><button className="button full" onClick={() => setModal({ type: 'branch', entity: b })}>Manage branch<ArrowRight size={15}/></button></section>)}{!data.branches.length && <Empty title="No branches yet" text="An administrator can add the first branch."/>}</div>}
+    {page === 'My dashboard' && <><section className="employee-hero"><div><span className="eyebrow">{dayLabel(dateKey())} · PHT</span><h2>A fresh start.<br/>A simple check-in.</h2><p>Confirm your branch, take a quick selfie,<br/>and you’re ready for your shift.</p><span className="employee-branch"><MapPin size={17}/>{employee ? branchName(employee.branch_id) : 'No branch assigned'}</span></div><div className="clock-widget"><div className="clock-face"><Coffee size={45}/></div><span>YOUR DAILY MOMENT</span></div></section><div className="employee-actions">{['clock-in','clock-out'].map(type => { const done = data.records.some(r => r.employee_id === employee?.id && r.attendance_date === dateKey() && r.transaction_type === type); return <section className="panel" key={type}><span className="stat-icon"><Camera size={22}/></span><h2>{type === 'clock-in' ? 'Start your shift' : 'Wrap up your day'}</h2><p>{done ? 'This transaction is already recorded for today.' : 'A live selfie is required for every attendance entry.'}</p><button className={`button ${type === 'clock-in' ? 'primary' : ''}`} disabled={!employee?.active || done || (type === 'clock-out' && !data.records.some(r => r.employee_id === employee?.id && r.attendance_date === dateKey() && r.transaction_type === 'clock-in'))} onClick={() => setModal({ type: 'camera', transaction: type })}>{done ? <Check size={17}/> : <Camera size={17}/>} {done ? 'Recorded' : type === 'clock-in' ? 'Clock in' : 'Clock out'}</button></section> })}</div></>}
+    {page === 'My profile' && <section className="panel profile-panel"><Avatar name={data.profile.name}/><h2>{data.profile.name}</h2><Badge>Employee</Badge><dl className="detail-list">{[['Employee code', employee?.code], ['Email', employee?.email], ['Position', employee?.position], ['Assigned branch', employee && branchName(employee.branch_id)], ['Account status', employee?.active ? 'Active' : 'Inactive']].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || 'Not assigned'}</dd></div>)}</dl><p>Contact your manager to update your details or branch assignment.</p></section>}
+    </>}
+    <footer className="page-footer"><span><ShieldCheck size={14}/>Built on trust. Backed by every check-in.</span><span>BrewTrack · Workforce, connected.</span></footer></main>
+    {demo && <div className="demo-toolbar"><span><span className="live-dot"/>You’re exploring sample data. Changes stay in this session.</span><button onClick={switchDemo}>Try {isManager ? 'employee' : 'manager'} view<ArrowRight size={14}/></button></div>}
+    </div>
+    {toast && <div className="toast" role="status"><Check size={18}/>{toast}<button className="icon-button" aria-label="Dismiss notification" onClick={() => setToast('')}><X size={15}/></button></div>}
+    {modal?.type === 'login' && <Login onClose={() => setModal(null)}/>}
+    {['employee','branch'].includes(modal?.type) && <EntityForm type={modal.type} entity={modal.entity} branches={data.branches} demo={demo} onClose={() => setModal(null)} onSave={entity => { const key = modal.type === 'employee' ? 'employees' : 'branches'; setData(old => ({ ...old, [key]: old[key].some(e => e.id === entity.id) ? old[key].map(e => e.id === entity.id ? entity : e) : [...old[key], entity] })); notify(`${modal.type === 'employee' ? 'Employee' : 'Branch'} saved${demo ? ' in this demo session' : ''}.`); setModal(null) }}/>}
+    {modal?.type === 'camera' && employee && <CameraCapture employee={employee} branch={data.branches.find(b => b.id === employee.branch_id)} type={modal.transaction} demo={demo} onClose={() => setModal(null)} onComplete={record => setData(old => ({ ...old, records: [record, ...old.records.filter(r => r.id !== record.id)] }))}/>}
+    {modal?.type === 'photo' && <PhotoReview record={modal.record} demo={demo} canReview={isManager} onClose={() => setModal(null)} notify={notify}/>}
+    {modal?.type === 'alerts' && <Modal title="Attendance follow-ups" subtitle={`${dayLabel(date)} · your selected branches`} onClose={() => setModal(null)}>{attentionRows.length ? <div className="alerts-list">{attentionRows.map(r => <div className="alert-row" key={r.id}><Avatar name={r.name}/><div><strong>{r.name}</strong><small>{branchName(r.branch_id)}</small></div><Badge>{r.status === 'Completed' ? 'Late' : r.status}</Badge></div>)}</div> : <Empty title="All caught up" text="There are no attendance follow-ups for this date."/>}</Modal>}
+    {modal?.type === 'help' && <Modal title="A simpler way to show up" subtitle="Your quick guide to BrewTrack" onClose={() => setModal(null)}><div className="help-steps">{[['01','Set up your team','Administrators create accounts in Supabase Auth, then link employees to their assigned branches.'],['02','Make every check-in count','Employees sign in, confirm their branch, and capture a fresh selfie for clock-in and clock-out. Camera access requires HTTPS or localhost.'],['03','Review with confidence','Managers inspect selfies, record reviews, find missing attendance, and export reports for their authorized branches.']].map(([n,title,text]) => <div key={n}><span>{n}</span><section><h3>{title}</h3><p>{text}</p></section></div>)}</div><div className="notice">{demo ? 'This is a demo workspace. Sign in to use your organization’s real records.' : 'Need an account or a branch change? Contact your workspace administrator.'}</div></Modal>}
+    {modal?.type === 'settings' && <Modal title="Workspace settings" subtitle="Attendance rules for this workspace" onClose={() => setModal(null)}><dl className="detail-list"><div><dt>Timezone</dt><dd>Asia/Manila (UTC+8)</dd></div><div><dt>Attendance model</dt><dd>One shift per calendar day</dd></div><div><dt>Late threshold</dt><dd>After branch shift start</dd></div><div><dt>Photo access</dt><dd>Private · signed links</dd></div><div><dt>Historical records</dt><dd>Immutable with review trail</dd></div></dl><p className="settings-note">Edit shift times in Branches. Role and manager-access assignments are maintained by your Supabase administrator.</p>{!demo && <button className="button" onClick={() => { setModal(null); refresh(user) }}><RefreshCw size={16}/>Refresh workspace</button>}</Modal>}
+  </div>
+}
+function Login({ onClose }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function submit(event) { event.preventDefault(); setBusy(true); setError(''); const values = new FormData(event.currentTarget); try { if (!configured) throw new Error('Set your Supabase environment variables to enable sign-in.'); const { error: authError } = await createClient().auth.signInWithPassword({ email: values.get('email').trim(), password: values.get('password') }); if (authError) throw authError; onClose() } catch (e) { setError(e.message) } finally { setBusy(false) } }
+  return <Modal title="Welcome to your workspace" subtitle="Sign in to manage your day with BrewTrack." onClose={onClose}><form onSubmit={submit}><label className="field">Work email<input name="email" type="email" placeholder="you@company.com" autoComplete="username" required/></label><label className="field">Password<input name="password" type="password" placeholder="Enter your password" autoComplete="current-password" required minLength={6}/></label>{error && <div className="error" role="alert">{error}</div>}<button className="button primary full" disabled={busy}>{busy && <LoaderCircle className="spin" size={17}/>}Sign in<ArrowRight size={16}/></button><p className="form-footnote">Your administrator provides your account. Contact them if you need access or a password reset.</p></form></Modal>
+}
+function EntityForm({ type, entity, branches, demo, onClose, onSave }) {
+  const employee = type === 'employee'
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError('')
+    const form = new FormData(event.currentTarget)
+    const values = Object.fromEntries(form.entries()); values.active = form.get('active') === 'on'
+    for (const key of Object.keys(values)) if (typeof values[key] === 'string') values[key] = values[key].trim()
+    try {
+      if (!values.name) throw new Error('Enter a name.')
+      if (!employee && values.shift_end <= values.shift_start) throw new Error('Shift end must be later than shift start. Overnight shifts are not supported.')
+      const saved = demo ? { ...entity, ...values, id: entity?.id || values.id || crypto.randomUUID() } : await saveEntity(employee ? 'employees' : 'branches', values, entity?.id)
+      onSave(saved)
+    } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+  return <Modal title={`${entity ? 'Edit' : 'Add'} ${type}`} subtitle={employee ? 'A connected account. A clear place on the team.' : 'Bring another location into the picture.'} onClose={onClose}><form onSubmit={submit}>{employee && !entity && <><div className="notice">First create the employee’s account and profile in Supabase, then paste their user ID below.{demo && ' In demo mode, any sample ID works.'}</div><label className="field">Supabase user ID<input name="id" required placeholder="User UUID from Supabase Auth" pattern={demo ? undefined : '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'}/></label></>}<label className="field">{employee ? 'Full name' : 'Branch name'}<input name="name" required maxLength={120} defaultValue={entity?.name} placeholder={employee ? 'e.g. Isabella Reyes' : 'e.g. BGC · High Street'}/></label>{employee ? <><div className="form-grid"><label className="field">Employee code<input name="code" required defaultValue={entity?.code} placeholder="BT-025"/></label><label className="field">Position<input name="position" required defaultValue={entity?.position || 'Team member'}/></label></div><label className="field">Work email<input name="email" type="email" required defaultValue={entity?.email}/></label><label className="field">Assigned branch<select name="branch_id" required defaultValue={entity?.branch_id || ''}><option value="" disabled>Select a branch</option>{branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label></> : <><label className="field">Address<input name="address" required defaultValue={entity?.address}/></label><div className="form-grid"><label className="field">Shift starts (PHT)<input name="shift_start" type="time" required defaultValue={entity?.shift_start || '09:00'}/></label><label className="field">Shift ends (PHT)<input name="shift_end" type="time" required defaultValue={entity?.shift_end || '18:00'}/></label></div></>}<label className="checkbox-field"><input name="active" type="checkbox" defaultChecked={entity?.active ?? true}/>Active {type}</label>{error && <div className="error" role="alert">{error}</div>}<div className="modal-actions"><button type="button" className="button" onClick={onClose}>Cancel</button><button className="button primary" disabled={busy}>{busy ? <LoaderCircle size={16} className="spin"/> : <Check size={16}/>}Save {type}</button></div></form></Modal>
 }
 
-export default App

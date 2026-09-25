@@ -9,7 +9,7 @@ export function Modal({ title, subtitle, children, onClose, wide = false }) {
   return <dialog ref={dialog} className={`modal ${wide ? 'wide' : ''}`} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose() }}><div className="modal-head"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20}/></button></div>{children}</dialog>
 }
 
-export default function CameraCapture({ employee, branch, type, demo, onClose, onComplete }) {
+export default function CameraCapture({ employee, station, workRole, type, demo, onClose, onComplete }) {
   const video = useRef(null)
   const stream = useRef(null)
   const [ready, setReady] = useState(false)
@@ -30,7 +30,7 @@ export default function CameraCapture({ employee, branch, type, demo, onClose, o
   async function capture() {
     setBusy(true); setError('')
     try {
-      const challenge = demo ? { id: crypto.randomUUID(), employee_id: employee.id, employee_name: employee.name, branch_id: branch.id, branch_name: branch.name, transaction_type: type, issued_at: new Date().toISOString() } : await startCapture(type)
+      const challenge = demo ? { id: crypto.randomUUID(), employee_id: employee.id, employee_name: employee.name, station_id: station.id, station_name: station.name, work_role: workRole, transaction_type: type, issued_at: new Date().toISOString() } : await startCapture(type)
       const v = video.current
       if (!v.videoWidth || !stream.current?.getVideoTracks()[0]?.enabled) throw new Error('Camera is not ready. Please try again.')
       const canvas = document.createElement('canvas'); canvas.width = v.videoWidth; canvas.height = v.videoHeight
@@ -39,7 +39,7 @@ export default function CameraCapture({ employee, branch, type, demo, onClose, o
       const height = size * 5.8
       ctx.fillStyle = 'rgba(9,35,32,.82)'; ctx.fillRect(0, canvas.height - height, canvas.width, height)
       ctx.fillStyle = 'white'; ctx.font = `600 ${size}px sans-serif`
-      const lines = [challenge.employee_name, challenge.branch_name, `${type.toUpperCase()} · ${new Date(challenge.issued_at).toLocaleString('en-PH', { timeZone: ZONE })}`, demo ? 'BREWTRACK · DEMO' : 'BREWTRACK · SERVER SESSION TIME']
+      const lines = [challenge.employee_name, `${challenge.station_name} · ${challenge.work_role || "Role not recorded"}`, `${type.toUpperCase()} · ${new Date(challenge.issued_at).toLocaleString('en-PH', { timeZone: ZONE })}`, demo ? 'BREWTRACK · DEMO' : 'BREWTRACK · SERVER SESSION TIME']
       lines.forEach((line, i) => ctx.fillText(line, size, canvas.height - height + size * (1.3 + i * 1.2), canvas.width - size * 2))
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .88))
       if (!blob) throw new Error('Could not capture the photo. Please try again.')
@@ -55,9 +55,9 @@ export default function CameraCapture({ employee, branch, type, demo, onClose, o
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
   return <Modal title={result ? 'You’re all set!' : `${type === 'clock-in' ? 'Clock in' : 'Clock out'} with a selfie`} subtitle={result ? 'Your attendance has been recorded.' : 'A fresh photo helps keep attendance accurate.'} onClose={onClose}>
-    {result ? <div className="confirmation"><div className="success-icon"><Check size={36}/></div><h2>{type === 'clock-in' ? 'Have a great shift.' : 'Thanks for your work today.'}</h2><p>{employee.name} · {branch.name}</p><strong>{timeLabel(result.official_timestamp)}</strong><p>{dateKey(new Date(result.official_timestamp))} · Philippine time</p><button className="button primary" onClick={onClose}>Done</button></div> : <>
+    {result ? <div className="confirmation"><div className="success-icon"><Check size={36}/></div><h2>{type === 'clock-in' ? 'Have a great shift.' : 'Thanks for your work today.'}</h2><p>{result.employee_name} · {result.station_name} · {result.work_role || "Role not recorded"}</p><strong>{timeLabel(result.official_timestamp)}</strong><p>{dateKey(new Date(result.official_timestamp))} · Philippine time</p><button className="button primary" onClick={onClose}>Done</button></div> : <>
       <div className="camera-view"><video ref={video} autoPlay playsInline muted onLoadedData={() => setReady(true)} style={{ display: captured ? 'none' : 'block' }}/>{captured && <img src={captured.url} alt="Your captured attendance selfie"/>}{!captured && <div className="camera-guide"/>}</div>
-      <div className="camera-caption"><ShieldCheck size={17}/><span>{branch.name} · {demo ? 'Demo session' : 'Secure camera session · submit within 2 minutes'}</span></div>
+      <div className="camera-caption"><ShieldCheck size={17}/><span>{station.name} · {demo ? 'Demo session' : 'Secure camera session · submit within 2 minutes'}</span></div>
       {error && <div className="error" role="alert">{error}</div>}
       <div className="modal-actions">{captured ? <><button className="button" disabled={busy} onClick={() => { setCaptured(null); setError('') }}><RotateCcw size={16}/>Retake</button><button className="button primary" disabled={busy} onClick={submit}>{busy ? <LoaderCircle className="spin" size={17}/> : <Check size={17}/>}Confirm {type}</button></> : <button className="button primary full" onClick={capture} disabled={!ready || busy}>{busy ? <LoaderCircle className="spin" size={17}/> : <Camera size={17}/>}Capture selfie</button>}</div>
     </>}

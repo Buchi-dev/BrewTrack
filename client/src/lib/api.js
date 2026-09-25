@@ -11,8 +11,14 @@ async function allRows(table, order) {
 export async function loadWorkspace(user) {
   const db = createClient()
   const profile = unwrap(await db.from('profiles').select('*').eq('id', user.id).single())
-  const [employees, branches, records, reviews] = await Promise.all([allRows('employees', 'name'), allRows('branches', 'name'), allRows('attendance_records', 'official_timestamp'), allRows('attendance_reviews', 'created_at')])
-  return { profile, employees, branches, records: records.reverse().map(r => ({ ...r, reviews: reviews.filter(review => review.attendance_id === r.id).reverse() })) }
+  const [employees, stations, records, reviews, assignments] = await Promise.all([allRows('employees', 'name'), allRows('stations', 'name'), allRows('attendance_records', 'official_timestamp'), allRows('attendance_reviews', 'created_at'), allRows('daily_assignments', 'work_date')])
+  return { profile, employees, stations, assignments, records: records.reverse().map(r => ({ ...r, reviews: reviews.filter(review => review.attendance_id === r.id).reverse() })) }
+}
+export async function removeAssignment(id) {
+  return unwrap(await createClient().from('daily_assignments').delete().eq('id', id).select().single())
+}
+export async function saveAssignments(values) {
+  return unwrap(await createClient().from('daily_assignments').insert(values).select())
 }
 export async function saveEntity(table, values, id) {
   const db = createClient()

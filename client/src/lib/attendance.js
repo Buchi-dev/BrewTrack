@@ -3,20 +3,23 @@ export const dateKey = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
 export const timeLabel = (value) => value ? new Intl.DateTimeFormat('en-US', { timeZone: ZONE, hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : '—'
 export const dayLabel = (value) => new Intl.DateTimeFormat('en-US', { timeZone: ZONE, month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${value}T12:00:00+08:00`))
 export const initials = (name = '') => name.split(' ').map(x => x[0]).slice(0, 2).join('')
-export function dailyRows(employees, records, date, branches = []) {
+export function dailyRows(employees, records, date, stations = [], assignments = []) {
   const roster = [...employees]
   for (const record of records.filter(r => r.attendance_date === date)) {
-    if (!roster.some(e => e.id === record.employee_id)) roster.push({ id: record.employee_id, name: record.employee_name, branch_id: record.branch_id, code: 'Historical', position: 'Team member', active: false })
+    if (!roster.some(e => e.id === record.employee_id)) roster.push({ id: record.employee_id, name: record.employee_name, station_id: record.station_id, code: 'Historical', position: 'Team member', active: false })
   }
-  return roster.filter(e => (e.active && (!e.created_at || dateKey(new Date(e.created_at)) <= date)) || records.some(r => r.employee_id === e.id && r.attendance_date === date)).map(employee => {
+  return roster.filter(e => assignments.some(a => a.employee_id === e.id && a.work_date === date) || records.some(r => r.employee_id === e.id && r.attendance_date === date)).map(employee => {
+    const assignment = assignments.find(a => a.employee_id === employee.id && a.work_date === date)
     const entries = records.filter(r => r.employee_id === employee.id && r.attendance_date === date)
     const clockIn = entries.find(r => r.transaction_type === 'clock-in')
     const clockOut = entries.find(r => r.transaction_type === 'clock-out')
-    const shiftEnd = branches.find(b => b.id === (clockIn?.branch_id || employee.branch_id))?.shift_end || '23:59:59'
+    const stationId = clockIn?.station_id || assignment?.station_id || entries[0]?.station_id
+    const stationName = clockIn?.station_name || assignment?.station_name || entries[0]?.station_name || stations.find(s => s.id === stationId)?.name || 'Unassigned'
+    const shiftEnd = assignment?.shift_end || stations.find(b => b.id === stationId)?.shift_end || '23:59:59'
     const currentTime = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(new Date())
     const ended = date < dateKey() || (date === dateKey() && currentTime > shiftEnd)
     const status = clockOut ? 'Completed' : clockIn ? (ended ? 'Missing clock-out' : clockIn.status === 'late' ? 'Late' : 'On time') : (ended ? 'Missing clock-in' : 'Not clocked in')
-    return { ...employee, name: clockIn?.employee_name || employee.name, branch_id: clockIn?.branch_id || employee.branch_id, clockIn, clockOut, status, entries }
+    return { ...employee, name: clockIn?.employee_name || assignment?.employee_name || employee.name, station_id: stationId, station_name: stationName, work_role: clockIn?.work_role || assignment?.work_role || 'Not recorded', clockIn, clockOut, status, entries }
   })
 }
 export function csvText(rows) {
@@ -33,6 +36,6 @@ export function downloadCsv(rows, filename) {
   link.href = url; link.download = filename; link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
-export function filterRecords(records, { search = '', branch = '', start = '', end = '', status = '', type = '' }) {
-  return records.filter(r => (!search || r.employee_name.toLowerCase().includes(search.toLowerCase())) && (!branch || r.branch_id === branch) && (!start || r.attendance_date >= start) && (!end || r.attendance_date <= end) && (!status || r.status === status) && (!type || r.transaction_type === type))
+export function filterRecords(records, { search = '', station = '', start = '', end = '', status = '', type = '' }) {
+  return records.filter(r => (!search || r.employee_name.toLowerCase().includes(search.toLowerCase())) && (!station || r.station_id === station) && (!start || r.attendance_date >= start) && (!end || r.attendance_date <= end) && (!status || r.status === status) && (!type || r.transaction_type === type))
 }

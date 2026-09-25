@@ -17,14 +17,19 @@ grant execute on function auth.uid(),storage.foldername(text) to authenticated,a
 grant select,insert,update,delete on storage.objects to authenticated;
 `)
 await db.exec(await readFile(new URL('../../supabase/migrations/20260924095205_workforce_attendance.sql', import.meta.url),'utf8'))
-console.log('PASS: complete migration applies to PostgreSQL')
+
+console.log('PASS: both migrations apply to PostgreSQL')
 await db.exec(`
 insert into auth.users values ('${ids.admin}'),('${ids.manager}'),('${ids.employee}'),('${ids.other}');
 insert into public.profiles(id,name,role) values ('${ids.admin}','Admin','admin'),('${ids.manager}','Manager','manager'),('${ids.employee}','Employee','employee'),('${ids.other}','Other','employee');
-insert into public.branches(id,name) values ('${ids.b1}','Branch One'),('${ids.b2}','Branch Two');
+insert into public.branches(id,name) values ('${ids.b1}','Station One'),('${ids.b2}','Station Two');
 insert into public.manager_branches values ('${ids.manager}','${ids.b1}');
 insert into public.employees(id,code,name,email,branch_id) values ('${ids.employee}','E001','Employee','e@example.com','${ids.b1}'),('${ids.other}','E002','Other','o@example.com','${ids.b2}');
 `)
+await db.exec(await readFile(new URL('../../supabase/migrations/20260925035832_daily_station_assignments.sql', import.meta.url),'utf8'))
+assert.equal((await db.query('select count(*)::int n from public.stations')).rows[0].n,2)
+assert.equal((await db.query('select station_id from public.employees where id=$1',[ids.employee])).rows[0].station_id,ids.b1)
+console.log('PASS: migration preserves existing stations, staff, and manager access')
 async function asUser(id, sql, params=[]) {
   await db.exec('set role authenticated')
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id])
@@ -34,10 +39,37 @@ async function deny(label, fn) { await assert.rejects(fn); console.log(`PASS: ${
 assert.equal((await asUser(ids.employee,'select * from public.employees')).length,1)
 assert.equal((await asUser(ids.manager,'select * from public.employees')).length,1)
 assert.equal((await asUser(ids.admin,'select * from public.employees')).length,2)
-console.log('PASS: employee ownership and manager branch isolation')
+console.log('PASS: employee ownership and manager station isolation')
 await deny('employee cannot promote their role',()=>asUser(ids.employee,"update public.profiles set role='admin' where id=$1",[ids.employee]))
-assert.equal((await asUser(ids.employee,'update public.employees set branch_id=$1 where id=$2 returning *',[ids.b2,ids.employee])).length,0)
-await deny('manager cannot move staff outside assigned branches',()=>asUser(ids.manager,'update public.employees set branch_id=$1 where id=$2',[ids.b2,ids.employee]))
+assert.equal((await asUser(ids.employee,'update public.employees set station_id=$1 where id=$2 returning *',[ids.b2,ids.employee])).length,0)
+await deny('manager cannot move staff outside assigned stations',()=>asUser(ids.manager,'update public.employees set station_id=$1 where id=$2',[ids.b2,ids.employee]))
+
+const [{today,tomorrow,yesterday}] = (await db.query("select (now() at time zone 'Asia/Manila')::date::text today, ((now() at time zone 'Asia/Manila')::date+1)::text tomorrow, ((now() at time zone 'Asia/Manila')::date-1)::text yesterday")).rows
+const assign = (actor, employee, station, day, role) => asUser(actor,'insert into public.daily_assignments(employee_id,station_id,work_date,work_role) values($1,$2,$3,$4) returning *',[employee,station,day,role])
+await deny('unscheduled employee cannot clock in',()=>asUser(ids.employee,"select public.begin_attendance('clock-in')"))
+await deny('employee cannot assign themselves',()=>assign(ids.employee,ids.employee,ids.b1,today,'Cook'))
+await deny('manager cannot assign to unauthorized station',()=>assign(ids.manager,ids.employee,ids.b2,today,'Cook'))
+await deny('manager cannot take staff from unauthorized home station',()=>assign(ids.manager,ids.other,ids.b1,today,'Cook'))
+await deny('past schedules cannot be created',()=>assign(ids.admin,ids.employee,ids.b1,yesterday,'Cook'))
+await deny('unsupported work roles are rejected',()=>assign(ids.admin,ids.employee,ids.b1,today,'Supervisor'))
+const [todayAssignment] = await assign(ids.manager,ids.employee,ids.b1,today,'Cook')
+const [tomorrowAssignment] = await assign(ids.admin,ids.employee,ids.b2,tomorrow,'Barista')
+await assign(ids.admin,ids.other,ids.b2,today,'Cashier (OTD)')
+await deny('one assignment per employee per date',()=>assign(ids.admin,ids.employee,ids.b2,today,'Trainee'))
+assert.equal((await asUser(ids.employee,'select * from public.daily_assignments')).length,2)
+assert.equal((await asUser(ids.manager,'select * from public.daily_assignments')).length,1)
+assert.equal((await asUser(ids.employee,'select * from public.stations')).length,2)
+await deny('assignment date cannot move',()=>asUser(ids.admin,'update public.daily_assignments set work_date=$1 where id=$2',[tomorrow,todayAssignment.id]))
+await asUser(ids.admin,"update public.daily_assignments set work_role='Trainee' where id=$1",[tomorrowAssignment.id])
+assert.equal((await asUser(ids.employee,'select work_role from public.daily_assignments where work_date=$1',[today]))[0].work_role,'Cook')
+console.log('PASS: rotation, date independence, authorization, employee visibility, and duplicate validation')
+// A manager change during camera capture invalidates the old challenge.
+const [{challenge:stale}] = await asUser(ids.employee,"select public.begin_attendance('clock-in') as challenge")
+const stalePath = ids.employee+'/'+stale.id+'.jpg'
+await asUser(ids.employee,'insert into storage.objects(bucket_id,name,owner_id) values($1,$2,$3)',['attendance-selfies',stalePath,ids.employee])
+await asUser(ids.manager,"update public.daily_assignments set work_role='Barista' where id=$1",[todayAssignment.id])
+await deny('stale camera assignment cannot be recorded',()=>asUser(ids.employee,'insert into public.attendance_records(employee_id,challenge_id,photo_path) values($1,$2,$3)',[ids.employee,stale.id,stalePath]))
+await asUser(ids.manager,"update public.daily_assignments set work_role='Cook' where id=$1",[todayAssignment.id])
 await deny('clock-out requires a clock-in',()=>asUser(ids.employee,"select public.begin_attendance('clock-out')"))
 const [first] = await asUser(ids.employee,"select public.begin_attendance('clock-in') as challenge")
 const c = first.challenge
@@ -48,7 +80,12 @@ await asUser(ids.employee,'insert into storage.objects(bucket_id,name,owner_id) 
 const [record] = await asUser(ids.employee,'insert into public.attendance_records(employee_id,challenge_id,photo_path) values($1,$2,$3) returning *',[ids.employee,c.id,path])
 assert.equal(new Date(record.official_timestamp).getTime(),new Date(c.issued_at).getTime())
 assert.equal(record.employee_name,'Employee')
-assert.equal(record.branch_id,ids.b1)
+assert.equal(record.station_id,ids.b1)
+assert.equal(record.work_role,'Cook')
+await deny('assignment with attendance cannot be edited',()=>asUser(ids.admin,"update public.daily_assignments set work_role='Barista' where id=$1",[todayAssignment.id]))
+await deny('assignment with attendance cannot be deleted',()=>asUser(ids.admin,'delete from public.daily_assignments where id=$1',[todayAssignment.id]))
+await asUser(ids.admin,'delete from public.daily_assignments where id=$1',[tomorrowAssignment.id])
+assert.equal((await asUser(ids.employee,'select work_role from public.daily_assignments where work_date=$1',[today]))[0].work_role,'Cook')
 console.log('PASS: attendance snapshots identity and uses the server session timestamp')
 await deny('duplicate clock-in prevented',()=>asUser(ids.employee,"select public.begin_attendance('clock-in')"))
 await deny('challenge replay prevented',()=>asUser(ids.employee,'insert into public.attendance_records(employee_id,challenge_id,photo_path) values($1,$2,$3)',[ids.employee,c.id,path]))
@@ -62,7 +99,7 @@ assert.equal((await asUser(ids.employee,'delete from storage.objects returning *
 console.log('PASS: private evidence visibility and immutable storage policies')
 await asUser(ids.manager,'insert into public.attendance_reviews(attendance_id,verdict,note) values($1,$2,$3)',[record.id,'verified','Matches employee'])
 await deny('employees cannot approve evidence',()=>asUser(ids.employee,'insert into public.attendance_reviews(attendance_id,verdict) values($1,$2)',[record.id,'verified']))
-assert.equal((await asUser(ids.admin,'select * from public.audit_logs')).length,2)
+assert.ok((await asUser(ids.admin,"select * from public.audit_logs where table_name='daily_assignments' and action='DELETE'")).length > 0)
 console.log('PASS: reviews and attendance produce audit history')
 const [{challenge:out}] = await asUser(ids.employee,"select public.begin_attendance('clock-out') as challenge")
 const outPath = `${ids.employee}/${out.id}.jpg`
@@ -75,6 +112,9 @@ await db.query("update public.capture_challenges set expires_at=now()-interval '
 await deny('expired camera session cannot upload',()=>asUser(ids.other,'insert into storage.objects(bucket_id,name,owner_id) values($1,$2,$3)',['attendance-selfies',`${ids.other}/${expired.id}.jpg`,ids.other]))
 await db.exec('set role anon')
 await deny('anonymous users cannot start attendance',()=>db.query("select public.begin_attendance('clock-in')"))
+await db.exec('reset role')
+await db.exec('set role anon')
+await deny('anonymous users cannot read schedules',()=>db.query('select * from public.daily_assignments'))
 await db.exec('reset role')
 await db.close()
 console.log('All database security tests passed. Storage/Auth service behavior requires a Supabase integration test.')

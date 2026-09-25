@@ -56,6 +56,7 @@ it does not need a `tailwind.config.js` file.
 ```powershell
 npm run lint
 npm run build
+npm run test:schedule
 npm run supabase:check
 ```
 
@@ -63,6 +64,36 @@ The Supabase check makes read-only requests to Auth settings and a nonexistent
 Data API table. The expected missing-table response confirms that the public key
 reaches the API; it does not verify access to application tables, table policies,
 or a complete sign-in flow. Pass `-- production` to check production env files.
+
+## Daily station schedules
+
+Apply all files in `supabase/migrations` in order before running this client
+against a real workspace. The daily station assignment migration renames existing
+locations to `stations` while preserving IDs, employee accounts, manager access,
+and attendance evidence. Deploy the migration together with this client update;
+the previous client uses the previous table names.
+
+Managers use **Daily schedule** to choose a date and assign each employee a
+station and one role: Cook, Barista, Cashier (OTD), or Trainee. Staffing summaries
+show missing core roles and the usual 3–4 staff pattern without enforcing a hard
+capacity. Nothing automatically rotates or copies assignments to another day.
+
+An employee's home station controls manager access; it does not determine their
+daily station or role. A manager must have access to both the employee's home
+station and the destination station. Administrators maintain this access in
+`manager_stations`. Staff can view their own assignments in **My schedule**.
+
+Dates use Asia/Manila time. Past assignments and any assignment with attendance
+are locked; other dates can be edited or removed. Changes are audited. Clock-in
+requires today's assignment and records its station and role. Clock-out keeps
+the clock-in assignment. Existing attendance keeps its original station and
+shows “Role not recorded” when no historical role is known. No historical
+schedules or work roles are invented during migration.
+
+The schedule tests run both migrations in an isolated PGlite PostgreSQL database
+with Auth/Storage schema stubs, then verify permissions, date independence,
+duplicate prevention, capture validation, audit history, and clock-in/out. This
+does not replace a hosted Supabase Auth/Storage integration test.
 
 References: [shadcn Vite setup](https://ui.shadcn.com/docs/installation/vite),
 [Supabase React setup](https://supabase.com/docs/guides/getting-started/quickstarts/reactjs).

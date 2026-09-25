@@ -1,0 +1,15 @@
+export const ROUTES = {
+  login: '/login',
+  resetPassword: '/reset-password',
+  unauthorized: '/unauthorized',
+  staffHome: '/staff',
+  staffAttendance: '/staff/attendance',
+  staffHistory: '/staff/history',
+  staffProfile: '/staff/profile',
+  managerDashboard: '/manager',
+  managerAttendance: '/manager/attendance',
+  managerEmployees: '/manager/employees',
+  managerBranches: '/manager/branches',
+  managerReports: '/manager/reports',
+  managerSettings: '/manager/settings',
+}

@@ -17,13 +17,13 @@ export const appTheme = {
   components: {
     Layout: {
       headerBg: '#ffffff',
-      siderBg: BRAND.colors.charcoal,
+      siderBg: BRAND.colors.espresso,
     },
     Menu: {
-      darkItemBg: BRAND.colors.charcoal,
-      darkSubMenuItemBg: BRAND.colors.charcoal,
+      darkItemBg: BRAND.colors.espresso,
+      darkSubMenuItemBg: BRAND.colors.espresso,
       darkItemSelectedBg: BRAND.colors.amber,
-      darkItemHoverBg: '#2a241f',
+      darkItemHoverBg: '#3a2418',
     },
     Card: {
       borderRadiusLG: 8,

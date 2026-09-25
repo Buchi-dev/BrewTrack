@@ -587,6 +587,23 @@ a {
   font-size: 42px;
 }
 
+.attendance-selfie-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.attendance-selfie-card {
+  min-width: 0;
+}
+
+.attendance-selfie-image {
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .ant-empty-description small {
   display: block;
   margin-top: 4px;
@@ -718,6 +735,10 @@ a {
   .form-grid-two {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .attendance-selfie-grid {
+    grid-template-columns: 1fr;
   }
 
   .operations-card h3.ant-typography {

@@ -68,6 +68,34 @@ export async function listStationScheduleAssignments(scheduleDate) {
   return data ?? []
 }
 
+export async function listStationScheduleAssignmentsRange(startDate, endDate) {
+  if (!supabase || !startDate || !endDate) return []
+
+  const { data, error } = await supabase
+    .from('station_schedule_assignments')
+    .select(
+      `
+        id,
+        schedule_date,
+        branch_id,
+        station_role,
+        scheduled_start,
+        scheduled_end,
+        trainer_employee_id,
+        employee_id,
+        notes
+      `,
+    )
+    .gte('schedule_date', startDate)
+    .lte('schedule_date', endDate)
+    .order('schedule_date', { ascending: true })
+    .order('branch_id', { ascending: true })
+    .order('station_role', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
 export async function saveStationScheduleAssignment(values, assignmentId = null) {
   if (!supabase) return null
 

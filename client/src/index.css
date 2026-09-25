@@ -1082,6 +1082,79 @@ a {
   color: var(--brand-amber-dark);
 }
 
+.schedule-summary-pill.is-warning {
+  border-color: #ffd591;
+  background: #fff7e6;
+  color: #ad6800;
+}
+
+.schedule-planner-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(420px, 1fr) minmax(260px, 340px);
+  gap: 16px;
+  align-items: start;
+}
+
+.schedule-calendar-card,
+.schedule-staff-rail {
+  border: 1px solid var(--brand-line);
+}
+
+.schedule-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.schedule-calendar-weekdays {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.schedule-calendar-day {
+  display: grid;
+  min-height: 58px;
+  align-content: start;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffdf9;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-calendar-day:hover {
+  border-color: var(--brand-amber-dark);
+  background: #fff8ed;
+}
+
+.schedule-calendar-day.is-muted {
+  opacity: 0.42;
+}
+
+.schedule-calendar-day.is-selected {
+  border-color: var(--brand-amber-dark);
+  background: #7a3a00;
+  color: #ffffff;
+}
+
+.schedule-calendar-day span {
+  font-weight: 700;
+}
+
+.schedule-calendar-day small {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.schedule-day-board {
+  display: grid;
+  gap: 16px;
+}
+
 .station-schedule-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1094,6 +1167,63 @@ a {
 
 .station-schedule-card .ant-card-body {
   min-height: 180px;
+}
+
+.station-schedule-dropzone {
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.station-schedule-dropzone.is-ready {
+  border-color: #b7eb8f;
+}
+
+.station-schedule-dropzone.is-needs-attention {
+  border-color: #ffd591;
+}
+
+.station-schedule-dropzone.is-conflict {
+  border-color: #ffccc7;
+}
+
+.station-role-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.station-role-slot {
+  display: grid;
+  min-height: 56px;
+  align-content: center;
+  gap: 3px;
+  padding: 8px;
+  border: 1px dashed #d6c1aa;
+  border-radius: 8px;
+  background: #fffaf3;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.station-role-slot:hover {
+  border-color: var(--brand-amber-dark);
+  background: #fff3df;
+}
+
+.station-role-slot:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.station-role-slot span {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.station-role-slot small {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .schedule-assignment-list {
@@ -1120,6 +1250,60 @@ a {
 
 .schedule-assignment-meta {
   font-size: 12px;
+}
+
+.schedule-staff-rail-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffaf3;
+}
+
+.schedule-staff-rail-note .anticon {
+  margin-top: 3px;
+  color: var(--brand-amber-dark);
+}
+
+.schedule-staff-list {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-staff-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffdf9;
+  color: var(--text-main);
+  text-align: left;
+  cursor: grab;
+}
+
+.schedule-staff-card > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.schedule-staff-card:hover {
+  border-color: var(--brand-amber-dark);
+  background: #fff8ed;
+}
+
+.schedule-staff-card.is-assigned {
+  cursor: not-allowed;
+  background: #f7f7f7;
+  opacity: 0.78;
 }
 
 .staff-station-panel {
@@ -1784,6 +1968,14 @@ a {
   .schedule-toolbar {
     display: grid !important;
     width: 100%;
+  }
+
+  .schedule-planner-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .station-role-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .station-schedule-grid {

@@ -469,6 +469,28 @@ a {
   min-width: min(320px, 100%);
 }
 
+.table-subtext {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.text-capitalize {
+  text-transform: capitalize;
+}
+
+.form-grid-two {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-grid-two .ant-form-item {
+  margin-bottom: 24px;
+}
+
 .status-tag {
   margin-top: 12px;
 }
@@ -637,6 +659,11 @@ a {
 
   .mobile-attendance-panel .ant-btn {
     width: 100%;
+  }
+
+  .form-grid-two {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   .operations-card h3.ant-typography {

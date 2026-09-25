@@ -8,43 +8,17 @@ import {
   TeamOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
-import { App, Button, Card, Col, Empty, Flex, Grid, Progress, Row, Space, Table, Tag, Typography } from 'antd'
+import { App, Button, Card, Col, Empty, Flex, Grid, List, Progress, Row, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BRAND } from '../../constants/brand.js'
 import { ROUTES } from '../../constants/routes.js'
-import { getManagerDashboardSummary } from '../../services/attendanceService.js'
+import { getManagerDashboardSummary, getManagerTodayAttendance } from '../../services/attendanceService.js'
+import { getFullName } from '../../services/managerService.js'
+import { formatDateTime } from '../../utils/date.js'
 import PageHeader from '../shared/PageHeader.jsx'
 
 const { Text, Title } = Typography
-
-const columns = [
-  {
-    title: 'Employee',
-    dataIndex: 'employee',
-    key: 'employee',
-    render: (value) => <Text strong>{value}</Text>,
-  },
-  {
-    title: 'Branch',
-    dataIndex: 'branch',
-    key: 'branch',
-    responsive: ['md'],
-  },
-  { title: 'Time in', dataIndex: 'clockIn', key: 'clockIn' },
-  {
-    title: 'Time out',
-    dataIndex: 'clockOut',
-    key: 'clockOut',
-    responsive: ['sm'],
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    render: (status) => <Tag color="processing">{status}</Tag>,
-  },
-]
 
 const defaultSummary = {
   totalEmployees: 0,
@@ -54,6 +28,21 @@ const defaultSummary = {
   currentlyWorking: 0,
   completedShifts: 0,
   missingClockOut: 0,
+}
+
+function getStatusColor(record) {
+  if (record.status === 'completed') return 'green'
+  if (record.status === 'late' || record.late_minutes > 0) return 'gold'
+  if (record.status === 'incomplete') return 'blue'
+  if (record.status === 'absent') return 'red'
+  return 'default'
+}
+
+function getStatusLabel(record) {
+  if (record.status === 'incomplete' && record.clock_in_at && !record.clock_out_at) return 'Working'
+  if (record.status === 'completed') return 'Completed'
+  if (record.status === 'late' || record.late_minutes > 0) return 'Late'
+  return record.status || 'Recorded'
 }
 
 function MetricCard({ title, value, helper, icon, tone = 'neutral' }) {
@@ -120,6 +109,7 @@ export default function ManagerDashboardPage() {
   const screens = Grid.useBreakpoint()
   const { message } = App.useApp()
   const [summary, setSummary] = useState(defaultSummary)
+  const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -127,7 +117,7 @@ export default function ManagerDashboardPage() {
 
     async function loadSummary() {
       try {
-        const data = await getManagerDashboardSummary()
+        const [data, todayRecords] = await Promise.all([getManagerDashboardSummary(), getManagerTodayAttendance()])
 
         if (!isMounted) return
         if (data?.error === 'forbidden') {
@@ -137,6 +127,7 @@ export default function ManagerDashboardPage() {
         }
 
         setSummary({ ...defaultSummary, ...(data ?? {}) })
+        setRecords(todayRecords)
       } catch (error) {
         if (isMounted) {
           message.error(error.message || 'Unable to load dashboard summary.')
@@ -152,6 +143,48 @@ export default function ManagerDashboardPage() {
       isMounted = false
     }
   }, [message])
+
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Employee',
+        dataIndex: 'profiles',
+        key: 'employee',
+        render: (profile) => (
+          <div>
+            <Text strong>{getFullName(profile)}</Text>
+            {profile?.employee_number && <div className="table-subtext">{profile.employee_number}</div>}
+          </div>
+        ),
+      },
+      {
+        title: 'Branch',
+        dataIndex: 'branches',
+        key: 'branch',
+        responsive: ['md'],
+        render: (branch) => branch?.name || '--',
+      },
+      {
+        title: 'Time in',
+        dataIndex: 'clock_in_at',
+        key: 'clockIn',
+        render: (value) => formatDateTime(value, { dateStyle: undefined }),
+      },
+      {
+        title: 'Time out',
+        dataIndex: 'clock_out_at',
+        key: 'clockOut',
+        responsive: ['sm'],
+        render: (value) => formatDateTime(value, { dateStyle: undefined }),
+      },
+      {
+        title: 'Status',
+        key: 'status',
+        render: (_, record) => <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>,
+      },
+    ],
+    [],
+  )
 
   const completionPercent = useMemo(() => {
     if (!summary.totalEmployees) return 0
@@ -230,15 +263,33 @@ export default function ManagerDashboardPage() {
           >
             {isPhoneLayout ? (
               <div className="mobile-attendance-panel" aria-busy={loading}>
-                <AttendanceEmptyState
-                  onAddEmployee={() => navigate(ROUTES.managerEmployees)}
-                  onOpenAttendance={() => navigate(ROUTES.managerAttendance)}
-                />
+                {records.length ? (
+                  <List
+                    loading={loading}
+                    dataSource={records}
+                    renderItem={(record) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={getFullName(record.profiles)}
+                          description={`${record.branches?.name || 'No branch'} • ${formatDateTime(record.clock_in_at, {
+                            dateStyle: undefined,
+                          })}`}
+                        />
+                        <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>
+                      </List.Item>
+                    )}
+                  />
+                ) : (
+                  <AttendanceEmptyState
+                    onAddEmployee={() => navigate(ROUTES.managerEmployees)}
+                    onOpenAttendance={() => navigate(ROUTES.managerAttendance)}
+                  />
+                )}
               </div>
             ) : (
               <Table
                 columns={columns}
-                dataSource={[]}
+                dataSource={records}
                 loading={loading}
                 pagination={{ pageSize: 8, hideOnSinglePage: true }}
                 rowKey="id"

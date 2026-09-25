@@ -1,4 +1,5 @@
 import { Card, Col, Form, Input, InputNumber, Row, Switch } from 'antd'
+import { BRAND } from '../../constants/brand.js'
 import PageHeader from '../shared/PageHeader.jsx'
 
 export default function ManagerSettingsPage() {
@@ -14,7 +15,7 @@ export default function ManagerSettingsPage() {
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Organization name" name="organizationName">
-                <Input placeholder="BrewTrack" />
+                <Input placeholder={BRAND.shortName} />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>

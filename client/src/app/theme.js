@@ -1,27 +1,29 @@
 import { theme } from 'antd'
+import { BRAND } from '../constants/brand.js'
 
 export const appTheme = {
   algorithm: theme.defaultAlgorithm,
   token: {
-    colorPrimary: '#256f61',
-    colorSuccess: '#2f7d55',
-    colorWarning: '#b7791f',
+    colorPrimary: BRAND.colors.amber,
+    colorSuccess: '#3d7b4f',
+    colorWarning: BRAND.colors.amberDark,
     colorError: '#bd3f32',
-    colorInfo: '#315f9c',
-    colorText: '#1f2933',
-    colorBgLayout: '#f5f7fa',
+    colorInfo: '#7a542e',
+    colorText: '#241f1a',
+    colorBgLayout: BRAND.colors.cream,
     borderRadius: 6,
     fontFamily: "Inter, system-ui, 'Segoe UI', Roboto, sans-serif",
   },
   components: {
     Layout: {
       headerBg: '#ffffff',
-      siderBg: '#10233f',
+      siderBg: BRAND.colors.charcoal,
     },
     Menu: {
-      darkItemBg: '#10233f',
-      darkSubMenuItemBg: '#10233f',
-      darkItemSelectedBg: '#256f61',
+      darkItemBg: BRAND.colors.charcoal,
+      darkSubMenuItemBg: BRAND.colors.charcoal,
+      darkItemSelectedBg: BRAND.colors.amber,
+      darkItemHoverBg: '#2a241f',
     },
     Card: {
       borderRadiusLG: 8,

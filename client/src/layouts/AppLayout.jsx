@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  AuditOutlined,
   BankOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -15,7 +14,9 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { Avatar, Button, Drawer, Grid, Layout, Menu, Space, Typography, message } from 'antd'
+import { BRAND } from '../constants/brand.js'
 import { ROUTES } from '../constants/routes.js'
+import { DEFAULT_TIMEZONE } from '../constants/settings.js'
 import { signOut } from '../services/authService.js'
 import { useAuth } from '../hooks/useAuth.js'
 
@@ -40,7 +41,58 @@ const staffItems = [
 
 function getDisplayName(profile) {
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
-  return name || 'BrewTrack User'
+  return name || `${BRAND.shortName} User`
+}
+
+function TodayClock() {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const date = new Intl.DateTimeFormat('en-PH', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: DEFAULT_TIMEZONE,
+  }).format(now)
+
+  const time = new Intl.DateTimeFormat('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: DEFAULT_TIMEZONE,
+  }).format(now)
+
+  return (
+    <div className="today-clock" aria-label={`Today is ${date}, ${time}`}>
+      <CalendarOutlined />
+      <div>
+        <Text className="today-clock-date">{date}</Text>
+        <Text className="today-clock-time">{time}</Text>
+      </div>
+    </div>
+  )
+}
+
+function NavAccount({ profile, onSignOut }) {
+  return (
+    <div className="nav-account">
+      <Space align="center" size={10}>
+        <Avatar icon={<UserOutlined />} />
+        <div className="nav-account-copy">
+          <Text className="nav-account-name">{getDisplayName(profile)}</Text>
+          <Text className="nav-account-role">{profile?.role || 'workspace user'}</Text>
+        </div>
+      </Space>
+      <Button className="nav-signout" icon={<LogoutOutlined />} onClick={onSignOut}>
+        Sign out
+      </Button>
+    </div>
+  )
 }
 
 export default function AppLayout({ section }) {
@@ -83,31 +135,37 @@ export default function AppLayout({ section }) {
       {contextHolder}
       {screens.md ? (
         <Sider width={244} className="app-sider">
-          <div className="sider-brand">
-            <AuditOutlined />
-            <span>BrewTrack</span>
+          <div className="sider-shell">
+            <div>
+              <div className="sider-brand">
+                <img src={BRAND.logos.icon} alt="" />
+                <span>{BRAND.shortName}</span>
+              </div>
+              {menu}
+            </div>
+            <NavAccount profile={profile} onSignOut={handleSignOut} />
           </div>
-          {menu}
         </Sider>
       ) : (
         <Drawer
           open={drawerOpen}
           placement="left"
           onClose={() => setDrawerOpen(false)}
-          width={280}
+          width="min(88vw, 300px)"
           className="mobile-nav"
         >
           <div className="sider-brand mobile">
-            <AuditOutlined />
-            <span>BrewTrack</span>
+            <img src={BRAND.logos.brown} alt="" />
+            <span>{BRAND.shortName}</span>
           </div>
           {menu}
+          <NavAccount profile={profile} onSignOut={handleSignOut} />
         </Drawer>
       )}
 
       <Layout>
         <Header className="topbar">
-          <Space>
+          <Space align="center">
             {!screens.md && (
               <Button
                 type="text"
@@ -122,13 +180,7 @@ export default function AppLayout({ section }) {
             </div>
           </Space>
 
-          <Space>
-            <Avatar icon={<UserOutlined />} />
-            {screens.sm && <Text strong>{getDisplayName(profile)}</Text>}
-            <Button icon={<LogoutOutlined />} onClick={handleSignOut}>
-              Sign out
-            </Button>
-          </Space>
+          <TodayClock />
         </Header>
 
         <Content className="app-content">

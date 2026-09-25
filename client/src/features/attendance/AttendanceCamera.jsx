@@ -33,6 +33,7 @@ export default function AttendanceCamera({
   onCapture,
   onContinue,
   continueLabel = 'Continue',
+  continueLoading = false,
 }) {
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -194,13 +195,14 @@ export default function AttendanceCamera({
         )}
         {hasPreview && (
           <>
-            <Button size="large" icon={<RedoOutlined />} onClick={retakePhoto}>
+            <Button size="large" icon={<RedoOutlined />} onClick={retakePhoto} disabled={continueLoading}>
               Retake
             </Button>
             <Button
               type="primary"
               size="large"
               icon={<CheckCircleOutlined />}
+              loading={continueLoading}
               onClick={() => onContinue?.(captureResult)}
             >
               {continueLabel}

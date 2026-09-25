@@ -499,6 +499,12 @@ a {
   height: 100%;
 }
 
+.attendance-panel-loading {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+}
+
 .camera-actions {
   margin-top: 16px;
 }

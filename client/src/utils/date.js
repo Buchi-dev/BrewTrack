@@ -20,3 +20,13 @@ export function formatDate(value, options = {}) {
     ...options,
   }).format(new Date(value))
 }
+
+export function formatTime(value, options = {}) {
+  if (!value) return '--'
+
+  return new Intl.DateTimeFormat('en-PH', {
+    timeStyle: 'short',
+    timeZone: DEFAULT_TIMEZONE,
+    ...options,
+  }).format(new Date(value))
+}

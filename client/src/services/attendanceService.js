@@ -170,6 +170,46 @@ export async function getTodayAttendance() {
   return data
 }
 
+export async function getStaffAttendanceHistory({ page = 1, pageSize = 10 } = {}) {
+  if (!supabase) return { records: [], total: 0 }
+
+  const safePage = Math.max(Number(page) || 1, 1)
+  const safePageSize = Math.min(Math.max(Number(pageSize) || 10, 1), 50)
+  const from = (safePage - 1) * safePageSize
+  const to = from + safePageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('attendance_records')
+    .select(
+      `
+        id,
+        attendance_date,
+        clock_in_at,
+        clock_out_at,
+        scheduled_start,
+        scheduled_end,
+        late_minutes,
+        worked_minutes,
+        status,
+        branches (
+          name,
+          code
+        )
+      `,
+      { count: 'exact' },
+    )
+    .order('attendance_date', { ascending: false })
+    .order('clock_in_at', { ascending: false, nullsFirst: false })
+    .range(from, to)
+
+  if (error) throw error
+
+  return {
+    records: data ?? [],
+    total: count ?? 0,
+  }
+}
+
 export async function clockIn({ photoPath = null, latitude = null, longitude = null } = {}) {
   if (!supabase) return null
 

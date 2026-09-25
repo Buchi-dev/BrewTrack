@@ -506,7 +506,12 @@ a {
 }
 
 .camera-actions {
+  width: 100%;
   margin-top: 16px;
+}
+
+.camera-actions .ant-btn {
+  min-width: 150px;
 }
 
 .attendance-camera-stage {
@@ -713,6 +718,16 @@ a {
   .attendance-camera-video,
   .attendance-camera-image {
     min-height: 360px;
+  }
+
+  .camera-actions {
+    display: grid;
+    gap: 10px !important;
+  }
+
+  .camera-actions .ant-space-item,
+  .camera-actions .ant-btn {
+    width: 100%;
   }
 
   .metric-card .ant-card-body {

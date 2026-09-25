@@ -27,6 +27,7 @@ import { useAuth } from '../../hooks/useAuth.js'
 import {
   clockIn,
   clockOut,
+  getAttendanceErrorMessage,
   getTodayAttendance,
   storeAttendanceSelfie,
 } from '../../services/attendanceService.js'
@@ -102,13 +103,15 @@ export default function StaffAttendancePage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [capturedPhoto, setCapturedPhoto] = useState(null)
+  const [pendingEvidence, setPendingEvidence] = useState(null)
   const [lastSuccess, setLastSuccess] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const [messageApi, contextHolder] = message.useMessage()
 
   const employeeName = getFullName(profile) || user?.email || 'Employee'
   const nextAction = getNextAction(todayAttendance)
-  const actionLabel = nextAction ? ATTENDANCE_ACTIONS[nextAction] : 'COMPLETED'
+  const effectiveAction = pendingEvidence?.eventType ?? nextAction
+  const actionLabel = effectiveAction ? ATTENDANCE_ACTIONS[effectiveAction] : 'COMPLETED'
   const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Assigned branch'
   const statusMeta = getStatusMeta(todayAttendance?.status)
 
@@ -166,7 +169,8 @@ export default function StaffAttendancePage() {
   }
 
   const handleContinue = async (result) => {
-    if (!nextAction) return
+    const actionToSubmit = pendingEvidence?.eventType ?? nextAction
+    if (!actionToSubmit || submitting) return
 
     const photoBlob = result?.blob
     if (!(photoBlob instanceof Blob)) {
@@ -177,9 +181,15 @@ export default function StaffAttendancePage() {
     setSubmitting(true)
     setErrorMessage(null)
 
+    let attendanceId = pendingEvidence?.attendanceId ?? null
+    let attendanceDate = pendingEvidence?.attendanceDate ?? null
+
     try {
-      const attendance = nextAction === 'clockIn' ? await clockIn() : await clockOut()
-      const attendanceId = getAttendanceId(attendance)
+      if (!pendingEvidence) {
+        const attendance = actionToSubmit === 'clockIn' ? await clockIn() : await clockOut()
+        attendanceId = getAttendanceId(attendance)
+        attendanceDate = getAttendanceDate(attendance)
+      }
 
       if (!attendanceId) {
         throw new Error('Attendance was created, but the record ID was not returned.')
@@ -188,16 +198,24 @@ export default function StaffAttendancePage() {
       await storeAttendanceSelfie({
         employeeId: profile?.id || user?.id,
         attendanceId,
-        attendanceDate: getAttendanceDate(attendance),
-        eventType: nextAction,
+        attendanceDate,
+        eventType: actionToSubmit,
         photoBlob,
       })
 
-      setLastSuccess(nextAction)
-      messageApi.success(`${ATTENDANCE_ACTIONS[nextAction]} submitted successfully.`)
+      setPendingEvidence(null)
+      setLastSuccess(actionToSubmit)
+      messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} submitted successfully.`)
       await loadTodayAttendance()
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to submit attendance.')
+      if (attendanceId && actionToSubmit) {
+        setPendingEvidence({
+          attendanceId,
+          attendanceDate: attendanceDate ?? new Date(),
+          eventType: actionToSubmit,
+        })
+      }
+      setErrorMessage(getAttendanceErrorMessage(error, 'Unable to submit attendance.'))
     } finally {
       setSubmitting(false)
     }

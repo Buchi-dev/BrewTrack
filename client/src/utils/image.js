@@ -106,6 +106,6 @@ export async function createAttendancePhotoBlob({
     blob,
     width,
     height,
-    previewUrl: canvas.toDataURL(mimeType, quality),
+    previewUrl: URL.createObjectURL(blob),
   }
 }

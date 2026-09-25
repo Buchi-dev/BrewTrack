@@ -8,6 +8,43 @@ const ATTENDANCE_PHOTO_EVENTS = {
 }
 const SIGNED_SELFIE_URL_TTL_SECONDS = 60 * 5
 
+function isNetworkFailure(error) {
+  return (
+    error?.name === 'TypeError'
+    || /failed to fetch|network|fetch/i.test(error?.message ?? '')
+  )
+}
+
+export function getAttendanceErrorMessage(error, fallback = 'Unable to complete the attendance request.') {
+  const message = error?.message ?? ''
+
+  if (isNetworkFailure(error)) {
+    return 'Network connection was interrupted. Please check your connection and try again.'
+  }
+
+  if (/duplicate key|already clocked in|attendance already exists/i.test(message)) {
+    return 'You already have an attendance record for today. Refresh your status before trying again.'
+  }
+
+  if (/no active attendance|clock.?out.*clock.?in|clock in first/i.test(message)) {
+    return 'No active clock-in record was found. Refresh your status before clocking out.'
+  }
+
+  if (/branch|assigned/i.test(message)) {
+    return 'Your account does not have an active branch assignment. Please contact a manager.'
+  }
+
+  if (/permission|policy|row-level security|rls|forbidden|not authorized/i.test(message)) {
+    return 'Your account does not have permission to perform this attendance action.'
+  }
+
+  if (/storage|bucket|object|upload/i.test(message)) {
+    return 'The attendance time was processed, but the selfie could not be stored. Please keep this page open and try again.'
+  }
+
+  return message || fallback
+}
+
 function assertUuid(value, label) {
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

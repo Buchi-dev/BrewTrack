@@ -55,6 +55,8 @@ await deny('unsupported work roles are rejected',()=>assign(ids.admin,ids.employ
 const [todayAssignment] = await assign(ids.manager,ids.employee,ids.b1,today,'Cook')
 const [tomorrowAssignment] = await assign(ids.admin,ids.employee,ids.b2,tomorrow,'Barista')
 await assign(ids.admin,ids.other,ids.b2,today,'Cashier (OTD)')
+assert.equal(todayAssignment.shift_start,'08:00:00')
+assert.equal(tomorrowAssignment.shift_start,'09:00:00')
 await deny('one assignment per employee per date',()=>assign(ids.admin,ids.employee,ids.b2,today,'Trainee'))
 assert.equal((await asUser(ids.employee,'select * from public.daily_assignments')).length,2)
 assert.equal((await asUser(ids.manager,'select * from public.daily_assignments')).length,1)
@@ -73,6 +75,7 @@ await asUser(ids.manager,"update public.daily_assignments set work_role='Cook' w
 await deny('clock-out requires a clock-in',()=>asUser(ids.employee,"select public.begin_attendance('clock-out')"))
 const [first] = await asUser(ids.employee,"select public.begin_attendance('clock-in') as challenge")
 const c = first.challenge
+assert.equal(c.shift_start,'08:00:00')
 const path = `${ids.employee}/${c.id}.jpg`
 await deny('attendance requires an uploaded selfie',()=>asUser(ids.employee,'insert into public.attendance_records(employee_id,challenge_id,photo_path) values($1,$2,$3)',[ids.employee,c.id,path]))
 await deny('another employee cannot upload to the camera session',()=>asUser(ids.other,'insert into storage.objects(bucket_id,name,owner_id) values($1,$2,$3)',['attendance-selfies',path,ids.other]))

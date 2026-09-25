@@ -59,6 +59,11 @@ create policy employees_scheduled_read on public.employees for select to authent
   exists(select 1 from public.daily_assignments a where a.employee_id=employees.id and private.can_manage(a.station_id))
 );
 
+create function private.role_shift_start(role text, station_start time) returns time language sql immutable set search_path = '' as $$
+  select case when role='Cook' then station_start - interval '1 hour' else station_start end
+$$;
+revoke all on function private.role_shift_start(text,time) from public, anon, authenticated;
+
 create function private.validate_assignment() returns trigger language plpgsql security definer set search_path = '' as $$
 declare e public.employees; s public.stations; target public.daily_assignments;
 begin
@@ -83,7 +88,7 @@ begin
   select * into s from public.stations where id=target.station_id and active;
   if not found then raise exception 'Station is inactive'; end if;
   new.employee_name:=e.name; new.station_name:=s.name;
-  new.shift_start:=s.shift_start; new.shift_end:=s.shift_end;
+  new.shift_start:=private.role_shift_start(new.work_role,s.shift_start); new.shift_end:=s.shift_end;
   new.updated_at:=clock_timestamp();
   return new;
 end;

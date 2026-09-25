@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { CalendarDays, Plus, Check, LoaderCircle, ArrowDownToLine, ChevronLeft, ChevronRight, Copy, Search, LockKeyhole } from 'lucide-react'
+import { CalendarDays, Plus, Check, LoaderCircle, ArrowDownToLine, ChevronLeft, ChevronRight, Copy, Search, LockKeyhole, List, MapPin, Clock3 } from 'lucide-react'
 import { Modal } from './CameraCapture'
 import { saveEntity, saveAssignments, removeAssignment } from '../lib/api'
 import { dateKey, dayLabel, downloadCsv } from '../lib/attendance'
-import { WORK_ROLES, CORE_ROLES, assignmentLocked, validateAssignment, validateBatch, monthDays, addDays, weekStart, copyAssignments } from '../lib/schedule'
+import { WORK_ROLES, CORE_ROLES, assignmentLocked, validateAssignment, validateBatch, monthDays, addDays, weekStart, copyAssignments, roleShiftStart } from '../lib/schedule'
 import './MonthlySchedule.css'
 
 const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const monthLabel = month => new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${month}-01T12:00:00Z`))
-const roleClass = role => `role-${WORK_ROLES.indexOf(role)}`
+const roleClass = role => `role-${Math.max(0, WORK_ROLES.indexOf(role))}`
 const employeeName = (data, a) => a.employee_name || data.employees.find(e => e.id === a.employee_id)?.name || 'Employee'
+const stationLabel = (data, a) => a.station_name || data.stations.find(s => s.id === a.station_id)?.name || 'Station'
+const shiftTime = a => a?.shift_start && a?.shift_end ? `${a.shift_start.slice(0, 5)}-${a.shift_end.slice(0, 5)}` : 'Time not set'
 function Role({ role }) { return <span className={`schedule-role ${roleClass(role)}`}>{role}</span> }
 function MonthControl({ month, onChange }) {
   const move = direction => onChange(addDays(direction < 0 ? `${month}-01` : monthDays(month).at(-1), direction).slice(0, 7))
@@ -28,6 +30,7 @@ export default function DailySchedule({ data, demo, onChange, notify, readOnly =
   const [station, setStation] = useState(() => data.stations.find(s => s.active)?.id || data.stations[0]?.id || '')
   const [search, setSearch] = useState('')
   const [onlyAvailable, setOnlyAvailable] = useState(false)
+  const [employeeView, setEmployeeView] = useState('list')
   const [editing, setEditing] = useState(null)
   const [copyMode, setCopyMode] = useState(null)
   const [error, setError] = useState('')
@@ -37,9 +40,12 @@ export default function DailySchedule({ data, demo, onChange, notify, readOnly =
   const days = monthDays(month)
   const offset = (new Date(`${days[0]}T12:00:00Z`).getUTCDay() + 6) % 7
   const stationInfo = data.stations.find(s => s.id === station)
-  const monthly = assignments.filter(a => a.station_id === station && a.work_date.startsWith(month))
+  const employeeAssignments = readOnly ? [...assignments].sort((a, b) => a.work_date.localeCompare(b.work_date) || shiftTime(a).localeCompare(shiftTime(b))) : []
+  const upcomingAssignments = employeeAssignments.filter(a => a.work_date >= today)
+  const nextAssignment = upcomingAssignments[0]
+  const monthly = readOnly ? employeeAssignments.filter(a => a.work_date.startsWith(month)) : assignments.filter(a => a.station_id === station && a.work_date.startsWith(month))
   const daily = assignments.filter(a => a.work_date === date)
-  const visible = daily.filter(a => a.station_id === station)
+  const visible = readOnly ? daily : daily.filter(a => a.station_id === station)
   const available = e => !daily.some(a => a.employee_id === e.id) && !data.records.some(r => r.employee_id === e.id && r.attendance_date === date)
   const staff = data.employees.filter(e => e.active && e.name.toLowerCase().includes(search.toLowerCase()) && (!onlyAvailable || available(e))).sort((a, b) => Number(available(b)) - Number(available(a)) || a.name.localeCompare(b.name))
   function changeMonth(value) { setMonth(value); setDate(value === today.slice(0, 7) ? today : `${value}-01`); setError('') }
@@ -64,20 +70,22 @@ export default function DailySchedule({ data, demo, onChange, notify, readOnly =
     notify(`${rows.length} assignment${rows.length === 1 ? '' : 's'} saved.`)
   }
   function exportSchedule() {
-    downloadCsv([['Date', 'Employee', 'Station', 'Work role'], ...monthly.map(a => [a.work_date, employeeName(data, a), a.station_name || stationInfo?.name, a.work_role])], `brewtrack-schedule-${month}.csv`)
+    downloadCsv([['Date', 'Employee', 'Station', 'Work role', 'Shift time'], ...monthly.map(a => [a.work_date, employeeName(data, a), stationLabel(data, a), a.work_role, shiftTime(a)])], `brewtrack-schedule-${month}.csv`)
   }
   return <>
-    <div className="schedule-controls"><MonthControl month={month} onChange={changeMonth}/><select aria-label="Schedule station" value={station} onChange={e => setStation(e.target.value)}>{!data.stations.length && <option value="">No stations</option>}{data.stations.map(s => <option key={s.id} value={s.id}>{s.name}{!s.active ? ' (inactive)' : ''}</option>)}</select><button className="button" onClick={() => changeMonth(today.slice(0, 7))}>Today</button><button className="button" onClick={exportSchedule}><ArrowDownToLine size={16}/>Export month</button></div>
-    <div className="schedule-legend">{WORK_ROLES.map(role => <Role key={role} role={role}/>)}<span><LockKeyhole size={13}/> Past dates and attendance are locked</span></div>
+    {readOnly && <section className="panel next-shift-card"><div><span className="section-label"><span className="live-dot"/>Next shift</span>{nextAssignment ? <><h2>{dayLabel(nextAssignment.work_date)}</h2><p><MapPin size={15}/>{stationLabel(data, nextAssignment)}</p></> : <><h2>No assignment yet</h2><p><CalendarDays size={15}/>Your manager has not added an upcoming shift.</p></>}</div>{nextAssignment && <div className="next-shift-meta"><Role role={nextAssignment.work_role}/><span><Clock3 size={14}/>{shiftTime(nextAssignment)}</span></div>}</section>}
+    <div className="schedule-controls"><MonthControl month={month} onChange={changeMonth}/>{!readOnly && <select aria-label="Schedule station" value={station} onChange={e => setStation(e.target.value)}>{!data.stations.length && <option value="">No stations</option>}{data.stations.map(s => <option key={s.id} value={s.id}>{s.name}{!s.active ? ' (inactive)' : ''}</option>)}</select>}<button className="button" onClick={() => changeMonth(today.slice(0, 7))}>Today</button><button className="button" onClick={exportSchedule}><ArrowDownToLine size={16}/>Export month</button>{readOnly && <div className="schedule-view-toggle" aria-label="Schedule view"><button className={employeeView === 'list' ? 'active' : ''} onClick={() => setEmployeeView('list')}><List size={15}/>List</button><button className={employeeView === 'calendar' ? 'active' : ''} onClick={() => setEmployeeView('calendar')}><CalendarDays size={15}/>Calendar</button></div>}</div>
+    <div className="schedule-legend">{WORK_ROLES.map(role => <Role key={role} role={role}/>)}<span><LockKeyhole size={13}/> {readOnly ? 'Past schedules remain available for reference' : 'Past dates and attendance are locked'}</span></div>
     {error && <div className="error" role="alert">{error}</div>}
-    <div className={`schedule-layout ${readOnly ? 'schedule-read-only' : ''}`}>
-      <section className="panel month-panel" aria-label={monthLabel(month)}><div className="panel-heading"><div><h2>{monthLabel(month)}</h2><p>{stationInfo?.name || 'Select a station'} · {readOnly ? 'Your assignments' : 'Aim for 3–4 staff per day'}</p></div><CalendarDays size={22}/></div>
+    {readOnly && <section className={`panel upcoming-panel ${employeeView === 'list' ? 'active' : ''}`}><div className="panel-heading"><div><h2>Upcoming shifts</h2><p>{upcomingAssignments.length ? `${upcomingAssignments.length} assignment${upcomingAssignments.length === 1 ? '' : 's'} ahead` : 'No assignment yet'}</p></div><List size={20}/></div><div className="upcoming-list">{upcomingAssignments.map(a => <button key={a.id} onClick={() => { setDate(a.work_date); setMonth(a.work_date.slice(0, 7)); setEmployeeView('calendar') }}><strong>{dayLabel(a.work_date)}</strong><span>{stationLabel(data, a)}</span><Role role={a.work_role}/><small><Clock3 size={13}/>{shiftTime(a)}</small></button>)}{!upcomingAssignments.length && <p className="muted">No assignment yet.</p>}</div></section>}
+    <div className={`schedule-layout ${readOnly ? `schedule-read-only employee-${employeeView}` : ''}`}>
+      <section className="panel month-panel" aria-label={monthLabel(month)}><div className="panel-heading"><div><h2>{monthLabel(month)}</h2><p>{readOnly ? 'Your assignments' : `${stationInfo?.name || 'Select a station'} · Aim for 3-4 staff per day`}</p></div><CalendarDays size={22}/></div>
         <div className="calendar-scroll"><div className="month-grid">{weekdays.map(day => <div className="weekday" key={day}>{day}</div>)}{Array.from({ length: offset }, (_, i) => <div className="calendar-blank" key={`blank-${i}`} aria-hidden="true"/>)}{days.map(day => {
           const team = monthly.filter(a => a.work_date === day)
           const missing = CORE_ROLES.filter(role => !team.some(a => a.work_role === role))
           return <div className={`calendar-day ${day === date ? 'selected' : ''} ${day < today ? 'past' : ''}`} key={day} onDragOver={e => { if (!readOnly && !busy && day >= today && stationInfo?.active) e.preventDefault() }} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('application/x-brewtrack-staff'); if (data.employees.some(staff => staff.id === id && staff.active)) assign(id, day) }}>
             <button className={`calendar-date ${day === today ? 'is-today' : ''}`} aria-label={`Select ${dayLabel(day)}`} aria-pressed={day === date} onClick={() => { setDate(day); setError('') }}><span>{Number(day.slice(-2))}</span>{day < today && <LockKeyhole size={11}/>}</button>
-            <div className="calendar-team">{team.map(a => <button key={a.id} className="calendar-assignment" onClick={() => { setDate(day); if (!readOnly && !busy && !assignmentLocked(a, data.records, today)) setEditing(a) }} aria-label={`${employeeName(data, a)}, ${a.work_role}${assignmentLocked(a, data.records, today) ? ', locked' : ', edit assignment'}`}><span>{employeeName(data, a)} {assignmentLocked(a, data.records, today) && <LockKeyhole size={10}/>}</span><Role role={a.work_role}/></button>)}</div>
+            <div className="calendar-team">{team.map(a => <button key={a.id} className="calendar-assignment" onClick={() => { setDate(day); if (!readOnly && !busy && !assignmentLocked(a, data.records, today)) setEditing(a) }} aria-label={readOnly ? `${stationLabel(data, a)}, ${a.work_role}, ${shiftTime(a)}` : `${employeeName(data, a)}, ${a.work_role}${assignmentLocked(a, data.records, today) ? ', locked' : ', edit assignment'}`}><span>{readOnly ? stationLabel(data, a) : employeeName(data, a)} {assignmentLocked(a, data.records, today) && <LockKeyhole size={10}/>}</span><Role role={a.work_role}/>{readOnly && <small>{shiftTime(a)}</small>}</button>)}{readOnly && !team.length && <p className="calendar-empty">No assignment yet</p>}</div>
             {!readOnly && <div className={`coverage ${!missing.length && team.length >= 3 && team.length <= 4 ? 'covered' : ''}`}><strong>{team.length} / 3–4 staff</strong><span>{missing.length ? `Needs ${missing.join(', ')}` : 'Core roles covered'}{team.length > 4 ? ' · Above usual coverage' : ''}</span></div>}
           </div>
         })}</div></div>
@@ -88,8 +96,8 @@ export default function DailySchedule({ data, demo, onChange, notify, readOnly =
         return <button key={e.id} className={`staff-person ${unassigned ? 'unassigned' : ''}`} draggable={!busy && stationInfo?.active} onDragStart={event => { event.dataTransfer.setData('application/x-brewtrack-staff', e.id); event.dataTransfer.effectAllowed = 'copy' }} aria-disabled={busy || !unassigned || date < today || !stationInfo?.active} onClick={() => assign(e.id)}><strong>{e.name}</strong><span>{unassigned ? 'Unassigned' : assigned ? `${assigned.work_role} · ${assigned.station_name || data.stations.find(s => s.id === assigned.station_id)?.name || 'Station'}` : 'Attendance recorded'}</span></button>
       })}{!staff.length && <p className="muted">No staff match your search.</p>}</div></div></aside>}
     </div>
-    <section className="panel selected-day"><div className="panel-heading"><div><h2>{dayLabel(date)} · {stationInfo?.name || 'Station'}</h2><p>{visible.length} staff assigned{date < today ? ' · Past schedule locked' : ''}</p></div>{!readOnly && <div className="schedule-day-actions"><button className="button" disabled={busy || !stationInfo?.active || !visible.length} onClick={() => setCopyMode('day')}><Copy size={14}/>Copy day</button><button className="button" disabled={busy || !stationInfo?.active} onClick={() => setCopyMode('week')}><Copy size={14}/>Copy week</button><button className="button primary" disabled={busy || date < today || !stationInfo?.active} onClick={() => assign()}><Plus size={15}/>Assign staff</button></div>}</div>
-      <div className="selected-team">{visible.map(a => <div className="selected-person" key={a.id}><strong>{employeeName(data, a)}</strong><Role role={a.work_role}/>{assignmentLocked(a, data.records, today) ? <span className="muted"><LockKeyhole size={12}/> Locked</span> : !readOnly && <div className="schedule-actions"><button className="text-button" disabled={busy} onClick={() => setEditing(a)}>Edit</button><button className="text-button" disabled={busy} onClick={() => remove(a)}>Remove</button></div>}</div>)}{!visible.length && <p className="muted">{readOnly ? 'No assignments. Contact your manager for your schedule.' : 'No assignments yet. Choose staff from the list to plan this day.'}</p>}</div>
+    <section className="panel selected-day"><div className="panel-heading"><div><h2>{dayLabel(date)}{!readOnly && ` · ${stationInfo?.name || 'Station'}`}</h2><p>{readOnly ? (visible.length ? 'Shift details' : 'No assignment yet') : `${visible.length} staff assigned${date < today ? ' · Past schedule locked' : ''}`}</p></div>{!readOnly && <div className="schedule-day-actions"><button className="button" disabled={busy || !stationInfo?.active || !visible.length} onClick={() => setCopyMode('day')}><Copy size={14}/>Copy day</button><button className="button" disabled={busy || !stationInfo?.active} onClick={() => setCopyMode('week')}><Copy size={14}/>Copy week</button><button className="button primary" disabled={busy || date < today || !stationInfo?.active} onClick={() => assign()}><Plus size={15}/>Assign staff</button></div>}</div>
+      <div className="selected-team">{visible.map(a => <div className="selected-person" key={a.id}>{readOnly ? <><strong>{stationLabel(data, a)}</strong><Role role={a.work_role}/><span className="muted"><Clock3 size={12}/>{shiftTime(a)}</span></> : <><strong>{employeeName(data, a)}</strong><Role role={a.work_role}/>{assignmentLocked(a, data.records, today) ? <span className="muted"><LockKeyhole size={12}/> Locked</span> : <div className="schedule-actions"><button className="text-button" disabled={busy} onClick={() => setEditing(a)}>Edit</button><button className="text-button" disabled={busy} onClick={() => remove(a)}>Remove</button></div>}</>}</div>)}{!visible.length && <p className="muted">{readOnly ? 'No assignment yet.' : 'No assignments yet. Choose staff from the list to plan this day.'}</p>}</div>
     </section>
     {editing && <AssignmentForm assignment={editing} data={data} demo={demo} onClose={() => setEditing(null)} onSave={saved}/>}
     {copyMode && <CopyForm mode={copyMode} source={date} station={station} data={data} demo={demo} onClose={() => setCopyMode(null)} onSave={saved}/>}
@@ -102,7 +110,7 @@ async function saveBatch(values, data, demo) {
   return values.map(value => {
     const employee = data.employees.find(e => e.id === value.employee_id)
     const station = data.stations.find(s => s.id === value.station_id)
-    return { ...value, id: crypto.randomUUID(), employee_name: employee.name, station_name: station.name, shift_start: station.shift_start, shift_end: station.shift_end }
+    return { ...value, id: crypto.randomUUID(), employee_name: employee.name, station_name: station.name, shift_start: roleShiftStart(value.work_role, station.shift_start), shift_end: station.shift_end }
   })
 }
 function AssignmentForm({ assignment, data, demo, onClose, onSave }) {
@@ -120,7 +128,7 @@ function AssignmentForm({ assignment, data, demo, onClose, onSave }) {
         const employee = data.employees.find(e => e.id === values.employee_id && e.active)
         const station = data.stations.find(s => s.id === values.station_id && s.active)
         if (!employee || !station) throw new Error('Choose active staff and an active station.')
-        onSave([demo ? { ...assignment, ...values, employee_name: employee.name, station_name: station.name, shift_start: station.shift_start, shift_end: station.shift_end } : await saveEntity('daily_assignments', values, assignment.id)])
+        onSave([demo ? { ...assignment, ...values, employee_name: employee.name, station_name: station.name, shift_start: roleShiftStart(values.work_role, station.shift_start), shift_end: station.shift_end } : await saveEntity('daily_assignments', values, assignment.id)])
       } else onSave(await saveBatch(dates.map(work_date => ({ ...values, work_date })), data, demo))
     } catch (e) { setError(e.code === '23505' ? 'A staff member is already assigned on one of these dates. Refresh the schedule and adjust your dates.' : e.message) } finally { setBusy(false) }
   }

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { dailyRows } from '../src/lib/attendance.js'
-import { assignmentLocked, validateAssignment, monthDays, addDays, weekStart, copyAssignments, validateBatch } from '../src/lib/schedule.js'
+import { assignmentLocked, validateAssignment, monthDays, addDays, weekStart, copyAssignments, validateBatch, roleShiftStart } from '../src/lib/schedule.js'
 
 const employee = { id: 'e1', name: 'Staff member', station_id: 's1', active: true }
 const assignments = [
@@ -34,6 +34,12 @@ test('validation rejects duplicate dates and invalid work roles', () => {
   assert.throws(() => validateAssignment(assignments[0], assignments, [], '2026-09-25'), /already has/)
   assert.throws(() => validateAssignment({ ...assignments[0], work_role: 'Manager' }, [], [], '2026-09-25'), /Choose/)
   assert.doesNotThrow(() => validateAssignment({ ...assignments[1], work_role: 'Trainee' }, assignments, [], '2026-09-25', 'a2'))
+})
+test('cook assignments start one hour before station opening', () => {
+  assert.equal(roleShiftStart('Cook', '09:00'), '08:00')
+  assert.equal(roleShiftStart('Cook', '09:00:00'), '08:00:00')
+  assert.equal(roleShiftStart('Barista', '09:00'), '09:00')
+  assert.equal(roleShiftStart('Cashier (OTD)', '09:00'), '09:00')
 })
 
 test('calendar uses actual month lengths, including leap years', () => {

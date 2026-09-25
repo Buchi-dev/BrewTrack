@@ -1,5 +1,14 @@
 export const WORK_ROLES = ['Cook', 'Barista', 'Cashier (OTD)', 'Trainee']
 export const CORE_ROLES = WORK_ROLES.slice(0, 3)
+const ROLE_START_OFFSETS = { Cook: -60 }
+
+export function roleShiftStart(role, shiftStart) {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(shiftStart || '')
+  if (!match) return shiftStart
+  const minutes = (Number(match[1]) * 60 + Number(match[2]) + (ROLE_START_OFFSETS[role] || 0) + 1440) % 1440
+  const text = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+  return match[3] == null ? text : `${text}:${match[3]}`
+}
 
 export function monthDays(month) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return []

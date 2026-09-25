@@ -11,5 +11,6 @@ export const ROUTES = {
   managerEmployees: '/manager/employees',
   managerBranches: '/manager/branches',
   managerReports: '/manager/reports',
+  managerAudit: '/manager/audit',
   managerSettings: '/manager/settings',
 }

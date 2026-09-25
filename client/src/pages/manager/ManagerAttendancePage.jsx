@@ -19,6 +19,7 @@ import {
   Space,
   Table,
   Tag,
+  Timeline,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -26,6 +27,7 @@ import { getAttendanceSelfieSignedUrls } from '../../services/attendanceService.
 import {
   getFullName,
   getManagerAttendanceDetails,
+  listAttendanceEvents,
   listAllBranches,
   listEmployeeAttendanceHistory,
   listManagerAttendanceRecords,
@@ -84,6 +86,35 @@ function formatMinutes(value) {
   return minutes ? `${hours}h ${minutes}m` : `${hours}h`
 }
 
+function formatEventLabel(eventType) {
+  return eventType?.replaceAll('_', ' ') || 'attendance event'
+}
+
+function getEventColor(eventType) {
+  if (eventType === 'clock_in') return 'green'
+  if (eventType === 'clock_out') return 'blue'
+  if (eventType === 'status_change') return 'gold'
+  return 'gray'
+}
+
+function getEventSummary(event) {
+  if (event.event_type === 'status_change') {
+    return `${event.metadata?.old_status || '--'} to ${event.metadata?.new_status || '--'}`
+  }
+
+  if (event.event_type === 'clock_in' && Number(event.metadata?.late_minutes ?? 0) > 0) {
+    return `${event.metadata.late_minutes} min late`
+  }
+
+  if (event.event_type === 'clock_out' && Number(event.metadata?.worked_minutes ?? 0) > 0) {
+    return `Worked ${formatMinutes(event.metadata.worked_minutes)}`
+  }
+
+  if (event.event_type === 'attendance_note_added') return 'Note updated'
+
+  return event.metadata?.status || 'Recorded'
+}
+
 function toDateFilterValue(value) {
   return value ? value.format('YYYY-MM-DD') : null
 }
@@ -111,6 +142,7 @@ export default function ManagerAttendancePage() {
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [selfieUrls, setSelfieUrls] = useState({})
+  const [eventRows, setEventRows] = useState([])
   const [historyEmployee, setHistoryEmployee] = useState(null)
   const [historyRows, setHistoryRows] = useState([])
   const [historyCount, setHistoryCount] = useState(0)
@@ -181,11 +213,13 @@ export default function ManagerAttendancePage() {
   async function openDetails(record) {
     setSelectedRecord(record)
     setSelfieUrls({})
+    setEventRows([])
     setDetailsLoading(true)
 
     try {
       const details = await getManagerAttendanceDetails(record.id)
       setSelectedRecord(details)
+      setEventRows(await listAttendanceEvents(record.id))
 
       const paths = [details?.clock_in_photo_path, details?.clock_out_photo_path].filter(Boolean)
       if (paths.length) {
@@ -453,6 +487,27 @@ export default function ManagerAttendancePage() {
               takenAt={selectedRecord?.clock_out_at}
             />
           </div>
+
+          <Card size="small" title="Event history" loading={detailsLoading}>
+            {eventRows.length ? (
+              <Timeline
+                items={eventRows.map((event) => ({
+                  color: getEventColor(event.event_type),
+                  children: (
+                    <div>
+                      <Text strong className="text-capitalize">
+                        {formatEventLabel(event.event_type)}
+                      </Text>
+                      <div className="table-subtext">{formatDateTime(event.created_at)}</div>
+                      <div>{getEventSummary(event)}</div>
+                    </div>
+                  ),
+                }))}
+              />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No event history yet" />
+            )}
+          </Card>
 
           <Button
             icon={<HistoryOutlined />}

@@ -6,6 +6,7 @@ import ResetPasswordPage from '../features/auth/ResetPasswordPage.jsx'
 import AppLayout from '../layouts/AppLayout.jsx'
 import AuthLayout from '../layouts/AuthLayout.jsx'
 import ManagerAttendancePage from '../pages/manager/ManagerAttendancePage.jsx'
+import ManagerAuditPage from '../pages/manager/ManagerAuditPage.jsx'
 import ManagerBranchesPage from '../pages/manager/ManagerBranchesPage.jsx'
 import ManagerDashboardPage from '../pages/manager/ManagerDashboardPage.jsx'
 import ManagerEmployeesPage from '../pages/manager/ManagerEmployeesPage.jsx'
@@ -48,6 +49,7 @@ export default function AppRouter() {
             <Route path={ROUTES.managerEmployees} element={<ManagerEmployeesPage />} />
             <Route path={ROUTES.managerBranches} element={<ManagerBranchesPage />} />
             <Route path={ROUTES.managerReports} element={<ManagerReportsPage />} />
+            <Route path={ROUTES.managerAudit} element={<ManagerAuditPage />} />
             <Route path={ROUTES.managerSettings} element={<ManagerSettingsPage />} />
           </Route>
         </Route>

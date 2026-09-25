@@ -28,6 +28,7 @@ import {
   listEmployeeAttendanceReport,
   listEmployees,
   listLateAttendanceReport,
+  logManagerAction,
   listMissingClockOutReport,
   listMonthlyAttendanceReport,
 } from '../../services/managerService.js'
@@ -290,6 +291,18 @@ export default function ManagerReportsPage() {
       )
       const filename = `brewtrack-${filters.reportType}-report-${dayjs().format('YYYY-MM-DD-HHmm')}.csv`
       downloadCsv(filename, toCsvRows(result.rows))
+      await logManagerAction({
+        action: 'report_exported',
+        resourceType: 'reports',
+        metadata: {
+          reportType: filters.reportType,
+          exportedRows: result.rows.length,
+          filters: buildReportRequest(filters, {
+            page: 1,
+            pageSize: EXPORT_LIMIT,
+          }),
+        },
+      })
       message.success(`Exported ${result.rows.length} report rows.`)
     } catch (error) {
       message.error(error.message || 'Unable to export report.')

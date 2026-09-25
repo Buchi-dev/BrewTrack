@@ -58,6 +58,7 @@ BrewTrack/
       pages/
         manager/
           ManagerAttendancePage.jsx
+          ManagerAuditPage.jsx
           ManagerBranchesPage.jsx
           ManagerDashboardPage.jsx
           ManagerEmployeesPage.jsx
@@ -89,6 +90,7 @@ BrewTrack/
     migrations/
       20260924095205_remote_baseline.sql
       20260925182000_milestone_2_database.sql
+      20260925190000_milestone_11_auditing.sql
 ```
 
 ## Folder Responsibilities

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BankOutlined,
+  AuditOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   DashboardOutlined,
@@ -29,6 +30,7 @@ const managerItems = [
   { key: ROUTES.managerEmployees, icon: <TeamOutlined />, label: 'Employees' },
   { key: ROUTES.managerBranches, icon: <BankOutlined />, label: 'Branches' },
   { key: ROUTES.managerReports, icon: <FileTextOutlined />, label: 'Reports' },
+  { key: ROUTES.managerAudit, icon: <AuditOutlined />, label: 'Audit' },
   { key: ROUTES.managerSettings, icon: <SettingOutlined />, label: 'Settings' },
 ]
 

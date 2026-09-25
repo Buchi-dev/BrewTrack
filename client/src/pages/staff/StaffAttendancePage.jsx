@@ -104,8 +104,6 @@ export default function StaffAttendancePage() {
   const [submitting, setSubmitting] = useState(false)
   const [capturedPhoto, setCapturedPhoto] = useState(null)
   const [pendingEvidence, setPendingEvidence] = useState(null)
-  const [lastSuccess, setLastSuccess] = useState(null)
-  const [errorMessage, setErrorMessage] = useState(null)
   const [messageApi, contextHolder] = message.useMessage()
 
   const employeeName = getFullName(profile) || user?.email || 'Employee'
@@ -117,18 +115,16 @@ export default function StaffAttendancePage() {
 
   const loadTodayAttendance = useCallback(async () => {
     setLoading(true)
-    setErrorMessage(null)
-
     try {
       const attendance = await getTodayAttendance()
       setTodayAttendance(attendance)
       setCapturedPhoto(null)
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to load today\'s attendance.')
+      messageApi.error(error.message || 'Unable to load today\'s attendance.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [messageApi])
 
   useEffect(() => {
     let active = true
@@ -138,11 +134,10 @@ export default function StaffAttendancePage() {
         if (!active) return
         setTodayAttendance(attendance)
         setCapturedPhoto(null)
-        setErrorMessage(null)
       })
       .catch((error) => {
         if (!active) return
-        setErrorMessage(error.message || 'Unable to load today\'s attendance.')
+        messageApi.error(error.message || 'Unable to load today\'s attendance.')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -151,7 +146,7 @@ export default function StaffAttendancePage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [messageApi])
 
   const watermarkLines = useMemo(
     () => [
@@ -165,7 +160,6 @@ export default function StaffAttendancePage() {
 
   const handleCapture = (result) => {
     setCapturedPhoto(result)
-    setLastSuccess(null)
   }
 
   const handleContinue = async (result) => {
@@ -179,7 +173,6 @@ export default function StaffAttendancePage() {
     }
 
     setSubmitting(true)
-    setErrorMessage(null)
 
     let attendanceId = pendingEvidence?.attendanceId ?? null
     let attendanceDate = pendingEvidence?.attendanceDate ?? null
@@ -204,7 +197,6 @@ export default function StaffAttendancePage() {
       })
 
       setPendingEvidence(null)
-      setLastSuccess(actionToSubmit)
       messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} submitted successfully.`)
       await loadTodayAttendance()
     } catch (error) {
@@ -215,7 +207,7 @@ export default function StaffAttendancePage() {
           eventType: actionToSubmit,
         })
       }
-      setErrorMessage(getAttendanceErrorMessage(error, 'Unable to submit attendance.'))
+      messageApi.error(getAttendanceErrorMessage(error, 'Unable to submit attendance.'))
     } finally {
       setSubmitting(false)
     }
@@ -234,19 +226,6 @@ export default function StaffAttendancePage() {
           </Button>
         }
       />
-
-      {errorMessage && (
-        <Alert className="section-card" type="error" showIcon message={errorMessage} />
-      )}
-      {lastSuccess && (
-        <Alert
-          className="section-card"
-          type="success"
-          showIcon
-          message={`${ATTENDANCE_ACTIONS[lastSuccess]} recorded`}
-          description="Your official attendance time was recorded by the server. The watermarked selfie was stored privately as evidence."
-        />
-      )}
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={14}>

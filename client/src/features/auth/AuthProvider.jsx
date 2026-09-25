@@ -1,28 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ROLES } from '../../constants/roles.js'
 import { isSupabaseConfigured } from '../../config/env.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getCurrentProfile } from '../../services/profileService.js'
 import { AuthContext } from './authContext.js'
 
-function normalizeProfile(profile, user) {
-  if (profile) return profile
-
-  return user
-    ? {
-        id: user.id,
-        first_name: user.email?.split('@')[0] ?? 'User',
-        last_name: '',
-        role: ROLES.staff,
-        status: 'active',
-      }
-    : null
-}
-
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState(null)
 
   const loadProfile = useCallback(async (user) => {
     if (!user) {
@@ -31,7 +17,7 @@ export function AuthProvider({ children }) {
     }
 
     const currentProfile = await getCurrentProfile(user.id)
-    setProfile(normalizeProfile(currentProfile, user))
+    setProfile(currentProfile)
   }, [])
 
   useEffect(() => {
@@ -50,6 +36,7 @@ export function AuthProvider({ children }) {
       if (error) {
         setSession(null)
         setProfile(null)
+        setAuthError(error)
         setLoading(false)
         return
       }
@@ -58,6 +45,10 @@ export function AuthProvider({ children }) {
 
       try {
         await loadProfile(data.session?.user)
+        setAuthError(null)
+      } catch (error) {
+        setProfile(null)
+        setAuthError(error)
       } finally {
         if (!ignore) setLoading(false)
       }
@@ -74,6 +65,10 @@ export function AuthProvider({ children }) {
 
       try {
         await loadProfile(nextSession?.user)
+        setAuthError(null)
+      } catch (error) {
+        setProfile(null)
+        setAuthError(error)
       } finally {
         setLoading(false)
       }
@@ -89,6 +84,7 @@ export function AuthProvider({ children }) {
     () => ({
       isConfigured: isSupabaseConfigured,
       isAuthenticated: Boolean(session?.user),
+      authError,
       loading,
       profile,
       role: profile?.role,
@@ -96,7 +92,7 @@ export function AuthProvider({ children }) {
       user: session?.user ?? null,
       refreshProfile: () => loadProfile(session?.user),
     }),
-    [loadProfile, loading, profile, session],
+    [authError, loadProfile, loading, profile, session],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

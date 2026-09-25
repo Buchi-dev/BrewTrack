@@ -1,6 +1,6 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, Typography, message } from 'antd'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Alert, Button, Form, Input, Spin, Typography, message } from 'antd'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { signInWithPassword } from '../../services/authService.js'
@@ -10,9 +10,21 @@ const { Text, Title } = Typography
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isConfigured } = useAuth()
+  const { isAuthenticated, isConfigured, loading } = useAuth()
   const [api, contextHolder] = message.useMessage()
   const from = location.state?.from?.pathname || '/'
+
+  if (loading) {
+    return (
+      <div className="screen-center compact">
+        <Spin size="large" />
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
 
   async function handleFinish(values) {
     try {

@@ -1,11 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { Result, Spin } from 'antd'
+import { Button, Result, Spin } from 'antd'
+import { Link } from 'react-router-dom'
 import { ROUTES } from '../constants/routes.js'
 import { useAuth } from '../hooks/useAuth.js'
 
 export default function ProtectedRoute({ allowedRoles }) {
   const location = useLocation()
-  const { isAuthenticated, loading, profile, role } = useAuth()
+  const { authError, isAuthenticated, loading, profile, role } = useAuth()
 
   if (loading) {
     return (
@@ -17,6 +18,35 @@ export default function ProtectedRoute({ allowedRoles }) {
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.login} replace state={{ from: location }} />
+  }
+
+  if (authError) {
+    return (
+      <div className="screen-center">
+        <Result
+          status="error"
+          title="Could not load your account"
+          subTitle="Please refresh the page or sign in again."
+        />
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="screen-center">
+        <Result
+          status="warning"
+          title="Profile setup required"
+          subTitle="Your login exists, but no active staff profile is connected to it yet."
+          extra={
+            <Link to={ROUTES.login}>
+              <Button type="primary">Back to sign in</Button>
+            </Link>
+          }
+        />
+      </div>
+    )
   }
 
   if (profile?.status && profile.status !== 'active') {

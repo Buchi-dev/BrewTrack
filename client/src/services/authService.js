@@ -29,3 +29,14 @@ export async function requestPasswordReset(email) {
 
   if (error) throw error
 }
+
+export async function updatePassword(password) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  }
+
+  const { data, error } = await supabase.auth.updateUser({ password })
+
+  if (error) throw error
+  return data
+}

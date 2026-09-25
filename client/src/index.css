@@ -329,6 +329,288 @@ a {
   margin-top: 16px;
 }
 
+.staff-clock-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid #edcfaa;
+  background: linear-gradient(110deg, #fff1dc 0%, #fffaf3 100%);
+}
+
+.staff-dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 242px;
+  border: 0;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 88% 16%, rgba(200, 116, 22, 0.22), transparent 30%),
+    linear-gradient(120deg, var(--brand-espresso) 0%, var(--brand-charcoal) 55%, var(--brand-amber-dark) 100%);
+  color: #fff;
+  box-shadow: 0 18px 36px rgba(76, 43, 17, 0.16);
+}
+
+.staff-dashboard-hero::after {
+  position: absolute;
+  right: -84px;
+  bottom: -130px;
+  width: 300px;
+  height: 300px;
+  border: 1px solid rgba(255, 240, 220, 0.22);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(255, 240, 220, 0.06), 0 0 0 56px rgba(255, 240, 220, 0.04);
+  content: '';
+  pointer-events: none;
+}
+
+.staff-dashboard-hero .ant-card-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 242px;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  grid-template-rows: 1fr auto;
+  gap: 18px 24px;
+  padding: 28px 30px;
+}
+
+.staff-dashboard-hero-main {
+  min-width: 0;
+}
+
+.staff-dashboard-hero-topline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.staff-dashboard-hero .attendance-kicker,
+.staff-dashboard-hero .ant-typography-secondary {
+  color: var(--brand-latte);
+}
+
+.staff-dashboard-hero h2.ant-typography {
+  margin: 10px 0 4px;
+  color: #fff;
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -0.03em;
+}
+
+.staff-dashboard-hero-subtitle {
+  display: block;
+  max-width: 530px;
+  color: var(--brand-cream);
+  font-size: 14px;
+}
+
+.staff-dashboard-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 22px;
+  color: var(--brand-latte);
+  font-size: 12px;
+}
+
+.staff-dashboard-hero-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.staff-dashboard-hero-action {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.staff-hero-orbit {
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-items: center;
+  border: 1px solid rgba(255, 248, 239, 0.55);
+  border-radius: 50%;
+  background: rgba(255, 248, 239, 0.12);
+  box-shadow: 0 0 0 12px rgba(255, 248, 239, 0.06);
+  color: var(--brand-cream);
+  font-size: 34px;
+}
+
+.staff-dashboard-hero-button {
+  grid-column: 1 / -1;
+}
+
+.staff-dashboard-hero-button .ant-btn {
+  min-width: 148px;
+  border: 0;
+  background: #fff8ef;
+  color: var(--brand-espresso);
+  font-weight: 700;
+}
+
+.staff-dashboard-hero-button .ant-btn:hover {
+  background: #ffffff !important;
+  color: var(--brand-espresso) !important;
+}
+
+.staff-metric-card {
+  min-height: 148px;
+  border: 1px solid var(--brand-line);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.staff-dashboard-metrics {
+  margin-top: 16px;
+}
+
+.staff-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(43, 27, 18, 0.08);
+}
+
+.staff-metric-card .ant-card-body {
+  padding: 20px;
+}
+
+.staff-metric-status {
+  background: #fffaf3;
+}
+
+.staff-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staff-card-title .anticon {
+  color: var(--brand-amber-dark);
+}
+
+.staff-today-card,
+.staff-history-card {
+  overflow: hidden;
+  border: 1px solid var(--brand-line);
+  background: #fffdf9;
+}
+
+.staff-lower-grid {
+  margin-top: 16px;
+}
+
+.staff-lower-card {
+  height: 100%;
+  margin-top: 0;
+}
+
+.staff-today-card .ant-card-body,
+.staff-history-card .ant-card-body {
+  padding: 22px 24px;
+}
+
+.staff-shift-timeline {
+  display: grid;
+  gap: 0;
+}
+
+.staff-shift-line {
+  position: relative;
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.staff-shift-line:not(:last-child)::after {
+  position: absolute;
+  top: 38px;
+  bottom: -4px;
+  left: 16px;
+  border-left: 1px dashed #dcc6aa;
+  content: '';
+}
+
+.staff-shift-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--brand-line);
+  border-radius: 50%;
+  background: var(--brand-latte);
+  color: var(--text-muted);
+}
+
+.staff-shift-line.is-active .staff-shift-dot,
+.staff-shift-line.is-done .staff-shift-dot {
+  border-color: #e4b270;
+  background: #fff0dc;
+  color: var(--brand-amber-dark);
+}
+
+.staff-shift-line > div,
+.staff-history-action > div {
+  display: grid;
+  gap: 3px;
+}
+
+.staff-shift-line .ant-typography-secondary,
+.staff-history-action .ant-typography-secondary {
+  font-size: 12px;
+}
+
+.staff-history-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.staff-clock-cta .ant-card-body {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+}
+
+.staff-clock-cta-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.staff-clock-cta-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  background: #fff8ef;
+  color: var(--brand-amber-dark);
+  font-size: 22px;
+}
+
+.staff-clock-cta h3.ant-typography {
+  margin: 3px 0 2px;
+  font-size: 21px;
+}
+
+.staff-clock-cta .ant-typography-secondary {
+  display: block;
+  font-size: 13px;
+}
+
 .dashboard-metrics {
   align-items: stretch;
 }
@@ -497,6 +779,140 @@ a {
 
 .camera-card {
   height: 100%;
+}
+
+.attendance-hero-card {
+  min-height: 460px;
+  border: 1px solid var(--brand-line);
+  background: linear-gradient(135deg, #fffdf9 0%, #fff7eb 100%);
+}
+
+.attendance-hero-content,
+.attendance-complete-state {
+  display: flex;
+  min-height: 380px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(20px, 5vw, 56px);
+}
+
+.attendance-hero-icon {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 20px;
+  place-items: center;
+  border-radius: 18px;
+  background: #fff0dc;
+  color: var(--brand-amber-dark);
+  font-size: 28px;
+}
+
+.attendance-kicker {
+  color: var(--brand-amber-dark);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attendance-hero-content h2.ant-typography,
+.attendance-complete-state h3.ant-typography {
+  margin: 8px 0;
+}
+
+.attendance-hero-content p.ant-typography {
+  max-width: 520px;
+  margin-bottom: 24px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.attendance-trust-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.attendance-complete-state {
+  align-items: center;
+  text-align: center;
+}
+
+.attendance-complete-state > .anticon {
+  color: #3d7b4f;
+  font-size: 48px;
+}
+
+.attendance-how-card .ant-card-body {
+  padding: 22px 24px;
+}
+
+.attendance-how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.attendance-how-grid > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  grid-template-columns: 28px 1fr;
+}
+
+.attendance-how-grid > div > .attendance-step-number {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff0dc;
+  color: var(--brand-amber-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.attendance-how-grid .ant-typography-secondary {
+  font-size: 12px;
+}
+
+.attendance-camera-modal .ant-modal-content {
+  padding: 24px;
+}
+
+.camera-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.camera-modal-header h3.ant-typography {
+  margin: 4px 0;
+}
+
+.camera-modal-body {
+  margin-top: 22px;
+}
+
+.camera-modal-body .attendance-camera-stage {
+  min-height: 420px;
+  border-radius: 16px;
+}
+
+.camera-modal-body .attendance-camera-video,
+.camera-modal-body .attendance-camera-image {
+  min-height: 420px;
+}
+
+.camera-modal-body .camera-actions {
+  justify-content: flex-end;
 }
 
 .attendance-panel-loading {
@@ -671,22 +1087,59 @@ a {
 @media (max-width: 640px) {
   .topbar {
     height: auto;
-    min-height: 68px;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px 14px;
+    min-height: 64px;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    padding: 10px 12px;
   }
 
   .topbar .ant-btn {
     padding-inline: 10px;
   }
 
-  .today-clock {
-    width: 100%;
+  .topbar > .ant-space:first-child {
     min-width: 0;
-    justify-content: flex-start;
-    text-align: left;
+    flex: 1 1 auto;
+  }
+
+  .topbar > .ant-space:first-child > .ant-space-item:last-child {
+    min-width: 0;
+  }
+
+  .topbar-title {
+    overflow: hidden;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .today-clock {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    gap: 6px;
+    text-align: right;
+  }
+
+  .today-clock .anticon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .today-clock-date,
+  .today-clock-time {
+    white-space: nowrap;
+  }
+
+  .today-clock-date {
+    font-size: 11px;
+  }
+
+  .today-clock-time {
+    font-size: 11px;
   }
 
   .app-content {
@@ -710,6 +1163,105 @@ a {
     font-size: 14px;
   }
 
+  .staff-clock-cta {
+    margin-top: 4px;
+  }
+
+  .staff-dashboard-hero {
+    min-height: 0;
+    border-radius: 14px;
+  }
+
+  .staff-dashboard-hero .ant-card-body {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 76px;
+    gap: 14px 8px;
+    padding: 20px 18px;
+  }
+
+  .staff-dashboard-hero h2.ant-typography {
+    margin-top: 8px;
+    font-size: 28px;
+  }
+
+  .staff-dashboard-hero-subtitle {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .staff-dashboard-hero-meta {
+    gap: 8px 12px;
+    margin-top: 15px;
+    font-size: 11px;
+  }
+
+  .staff-dashboard-hero-action {
+    align-self: center;
+  }
+
+  .staff-hero-orbit {
+    width: 62px;
+    height: 62px;
+    font-size: 24px;
+  }
+
+  .staff-dashboard-hero-action .ant-typography-secondary {
+    display: none;
+  }
+
+  .staff-dashboard-hero-button .ant-btn {
+    width: 100%;
+  }
+
+  .staff-metric-card {
+    min-height: 0;
+  }
+
+  .staff-metric-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .staff-today-card .ant-card-body,
+  .staff-history-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .staff-history-action {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .staff-history-action > a,
+  .staff-history-action > a .ant-btn {
+    width: 100%;
+  }
+
+  .staff-clock-cta .ant-card-body {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .staff-clock-cta-copy {
+    align-items: flex-start;
+  }
+
+  .staff-clock-cta h3.ant-typography {
+    font-size: 19px;
+  }
+
+  .staff-clock-cta > .ant-card-body > a,
+  .staff-clock-cta > .ant-card-body > a .ant-btn {
+    width: 100%;
+  }
+
+  .staff-clock-cta-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 19px;
+  }
+
   .page-actions .ant-space {
     gap: 8px !important;
   }
@@ -718,6 +1270,61 @@ a {
   .attendance-camera-video,
   .attendance-camera-image {
     min-height: 360px;
+  }
+
+  .attendance-hero-card {
+    min-height: 0;
+  }
+
+  .attendance-hero-content,
+  .attendance-complete-state {
+    min-height: 300px;
+    padding: 18px 4px;
+  }
+
+  .attendance-hero-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    font-size: 22px;
+  }
+
+  .attendance-hero-content h2.ant-typography {
+    font-size: 25px;
+  }
+
+  .attendance-hero-content p.ant-typography {
+    margin-bottom: 18px;
+    font-size: 14px;
+  }
+
+  .attendance-trust-note {
+    margin-top: 16px;
+    font-size: 11px;
+  }
+
+  .attendance-how-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .attendance-how-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .attendance-camera-modal .ant-modal-content {
+    padding: 18px;
+  }
+
+  .camera-modal-header {
+    flex-direction: column;
+  }
+
+  .camera-modal-body .attendance-camera-stage,
+  .camera-modal-body .attendance-camera-video,
+  .camera-modal-body .attendance-camera-image {
+    min-height: 330px;
   }
 
   .camera-actions {

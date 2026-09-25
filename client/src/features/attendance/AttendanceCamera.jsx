@@ -32,6 +32,7 @@ export default function AttendanceCamera({
   watermarkLines,
   onCapture,
   onContinue,
+  onCancel,
   continueLabel = 'Continue',
   continueLoading = false,
 }) {
@@ -171,6 +172,11 @@ export default function AttendanceCamera({
       )}
 
       <Space wrap className="camera-actions">
+        {onCancel && (
+          <Button size="large" onClick={onCancel} disabled={continueLoading}>
+            Cancel
+          </Button>
+        )}
         {!hasPreview && (
           <Button
             type="primary"

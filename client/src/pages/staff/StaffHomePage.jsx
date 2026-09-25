@@ -1,14 +1,18 @@
 import {
   CalendarOutlined,
   CameraOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
+  CoffeeOutlined,
+  EnvironmentOutlined,
   HistoryOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Row, Space, Statistic, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Row, Statistic, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes.js'
+import AttendanceFlowModal from '../../features/attendance/AttendanceFlowModal.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import {
   getStaffAttendanceHistory,
@@ -55,6 +59,7 @@ export default function StaffHomePage() {
   const [recentRecords, setRecentRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
 
   const firstName = profile?.first_name || 'there'
   const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Pending setup'
@@ -105,24 +110,17 @@ export default function StaffHomePage() {
   }, [])
 
   const completedThisMonth = useMemo(() => getCompletedCount(recentRecords), [recentRecords])
+  const nextAction = getNextActionText(todayAttendance)
+  const isComplete = nextAction === 'View attendance'
 
   return (
     <>
       <PageHeader
-        eyebrow="Staff"
+        eyebrow="Staff dashboard"
         title={`Good day, ${firstName}`}
-        description="Review today's attendance status and start a camera-based clock in or clock out."
+        description="Everything you need for today’s shift, in one place."
         actions={
-          <Space wrap>
-            <Button icon={<ReloadOutlined />} onClick={loadSummary} loading={loading}>
-              Refresh
-            </Button>
-            <Link to={ROUTES.staffAttendance}>
-              <Button type="primary" icon={<CameraOutlined />}>
-                {getNextActionText(todayAttendance)}
-              </Button>
-            </Link>
-          </Space>
+          <Button icon={<ReloadOutlined />} onClick={loadSummary} loading={loading}>Refresh</Button>
         }
       />
 
@@ -130,9 +128,41 @@ export default function StaffHomePage() {
         <Alert className="section-card" type="error" showIcon message={errorMessage} />
       )}
 
-      <Row gutter={[16, 16]}>
+      <Card className="staff-dashboard-hero" bordered={false}>
+        <div className="staff-dashboard-hero-main">
+          <div className="staff-dashboard-hero-topline">
+            <Text className="attendance-kicker">Today’s shift</Text>
+            <Tag color={getStatusColor(todayAttendance)}>{getTodayStatusLabel(todayAttendance)}</Tag>
+          </div>
+          <Typography.Title level={2}>
+            {isComplete ? 'You’re all set.' : nextAction === 'Clock out' ? 'Finish strong.' : 'Ready when you are.'}
+          </Typography.Title>
+          <Text className="staff-dashboard-hero-subtitle">
+            {isComplete
+              ? 'Your attendance has been recorded for today.'
+              : nextAction === 'Clock out'
+                ? 'Your shift is in progress. Capture a selfie when you’re ready to clock out.'
+                : 'Start your shift with a quick, secure selfie.'}
+          </Text>
+          <div className="staff-dashboard-hero-meta">
+            <span><EnvironmentOutlined /> {branchName}</span>
+            <span><CalendarOutlined /> {formatDate(new Date())}</span>
+          </div>
+        </div>
+        <div className="staff-dashboard-hero-action">
+          <div className="staff-hero-orbit"><CameraOutlined /></div>
+          <Text type="secondary">{isComplete ? 'Attendance complete' : 'One clear selfie'}</Text>
+        </div>
+        <div className="staff-dashboard-hero-button">
+          <Button type="primary" size="large" icon={<CameraOutlined />} onClick={() => setCameraOpen(true)}>
+            {nextAction}
+          </Button>
+        </div>
+      </Card>
+
+      <Row className="staff-dashboard-metrics" gutter={[16, 16]}>
         <Col xs={24} md={8}>
-          <Card>
+          <Card className="staff-metric-card staff-metric-status">
             <Statistic
               title="Today's status"
               value={getTodayStatusLabel(todayAttendance)}
@@ -145,13 +175,13 @@ export default function StaffHomePage() {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card className="staff-metric-card">
             <Statistic title="Assigned branch" value={branchName} loading={loading} />
             <Text type="secondary">Your attendance is filed against your assigned branch.</Text>
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card className="staff-metric-card">
             <Statistic
               title="Recent completed shifts"
               value={completedThisMonth}
@@ -164,32 +194,53 @@ export default function StaffHomePage() {
         </Col>
       </Row>
 
-      <Card className="section-card" title="Today">
-        <Space direction="vertical" size="small" className="full-width">
-          <Text>
-            <strong>Date:</strong> {formatDate(new Date())}
-          </Text>
-          <Text>
-            <strong>Clock in:</strong> {formatTime(todayAttendance?.clock_in_at)}
-          </Text>
-          <Text>
-            <strong>Clock out:</strong> {formatTime(todayAttendance?.clock_out_at)}
-          </Text>
-        </Space>
-      </Card>
+      <Row className="staff-lower-grid" gutter={[16, 16]}>
+        <Col xs={24} lg={16}>
+          <Card
+            className="staff-today-card staff-lower-card"
+            title={<span className="staff-card-title"><CoffeeOutlined /> Today’s brew</span>}
+          >
+            <div className="staff-shift-timeline">
+              <div className="staff-shift-line is-active">
+                <span className="staff-shift-dot"><CalendarOutlined /></span>
+                <div><Text strong>{formatDate(new Date())}</Text><Text type="secondary">Your shift at {branchName}</Text></div>
+              </div>
+              <div className={`staff-shift-line ${todayAttendance?.clock_in_at ? 'is-done' : ''}`}>
+                <span className="staff-shift-dot"><ClockCircleOutlined /></span>
+                <div><Text strong>Clock in</Text><Text type="secondary">{formatTime(todayAttendance?.clock_in_at)}</Text></div>
+              </div>
+              <div className={`staff-shift-line ${todayAttendance?.clock_out_at ? 'is-done' : ''}`}>
+                <span className="staff-shift-dot"><CheckCircleOutlined /></span>
+                <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(todayAttendance?.clock_out_at)}</Text></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card
+            className="staff-history-card staff-lower-card"
+            title={<span className="staff-card-title"><HistoryOutlined /> Brew history</span>}
+          >
+            <div className="staff-history-action">
+              <div><Text strong>Previous shifts</Text><Text type="secondary">Review attendance records and selfie evidence.</Text></div>
+              <Link to={ROUTES.staffHistory}>
+                <Button icon={<HistoryOutlined />}>View history</Button>
+              </Link>
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card className="section-card" title="Fast actions">
-        <Space wrap>
-          <Link to={ROUTES.staffAttendance}>
-            <Button type="primary" icon={<CameraOutlined />}>
-              Clock in / out
-            </Button>
-          </Link>
-          <Link to={ROUTES.staffHistory}>
-            <Button icon={<HistoryOutlined />}>View history</Button>
-          </Link>
-        </Space>
-      </Card>
+      <AttendanceFlowModal
+        key={`${cameraOpen ? 'open' : 'closed'}-${todayAttendance?.id ?? 'none'}-${todayAttendance?.clock_in_at ?? 'none'}-${todayAttendance?.clock_out_at ?? 'none'}`}
+        open={cameraOpen}
+        attendance={todayAttendance}
+        onClose={() => setCameraOpen(false)}
+        onSubmitted={() => {
+          setCameraOpen(false)
+          loadSummary()
+        }}
+      />
     </>
   )
 }

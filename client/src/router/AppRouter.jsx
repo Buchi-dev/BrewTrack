@@ -14,7 +14,6 @@ import ManagerReportsPage from '../pages/manager/ManagerReportsPage.jsx'
 import ManagerSettingsPage from '../pages/manager/ManagerSettingsPage.jsx'
 import NotFoundPage from '../pages/shared/NotFoundPage.jsx'
 import UnauthorizedPage from '../pages/shared/UnauthorizedPage.jsx'
-import StaffAttendancePage from '../pages/staff/StaffAttendancePage.jsx'
 import StaffHistoryPage from '../pages/staff/StaffHistoryPage.jsx'
 import StaffHomePage from '../pages/staff/StaffHomePage.jsx'
 import StaffProfilePage from '../pages/staff/StaffProfilePage.jsx'
@@ -36,7 +35,6 @@ export default function AppRouter() {
         <Route element={<ProtectedRoute allowedRoles={[ROLES.staff]} />}>
           <Route element={<AppLayout section="staff" />}>
             <Route path={ROUTES.staffHome} element={<StaffHomePage />} />
-            <Route path={ROUTES.staffAttendance} element={<StaffAttendancePage />} />
             <Route path={ROUTES.staffHistory} element={<StaffHistoryPage />} />
             <Route path={ROUTES.staffProfile} element={<StaffProfilePage />} />
           </Route>

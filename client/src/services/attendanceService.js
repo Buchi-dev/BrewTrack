@@ -121,7 +121,15 @@ export async function uploadAttendanceSelfie({
       upsert: false,
     })
 
-  if (error) throw error
+  if (error) {
+    const isAlreadyUploaded =
+      error.statusCode === 409
+      || error.status === 409
+      || /already exists|duplicate/i.test(error.message ?? '')
+
+    if (!isAlreadyUploaded) throw error
+  }
+
   return data?.path ?? path
 }
 

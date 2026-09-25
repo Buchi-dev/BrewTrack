@@ -184,7 +184,9 @@ begin
 end;
 $$;
 
-create or replace function public.attach_attendance_selfie(
+drop function if exists public.attach_attendance_selfie(uuid, text, text);
+
+create function public.attach_attendance_selfie(
   p_attendance_id uuid,
   p_event_type text,
   p_photo_path text

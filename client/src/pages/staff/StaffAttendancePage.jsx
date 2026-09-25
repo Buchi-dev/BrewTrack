@@ -21,7 +21,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AttendanceCamera from '../../features/attendance/AttendanceCamera.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import {
@@ -67,6 +67,28 @@ function getNextAction(attendance) {
   return null
 }
 
+function getPendingEvidence(attendance) {
+  if (!attendance?.id) return null
+
+  if (attendance.clock_in_at && !attendance.clock_in_photo_path) {
+    return {
+      attendanceId: attendance.id,
+      attendanceDate: attendance.attendance_date ?? attendance.clock_in_at,
+      eventType: 'clockIn',
+    }
+  }
+
+  if (attendance.clock_out_at && !attendance.clock_out_photo_path) {
+    return {
+      attendanceId: attendance.id,
+      attendanceDate: attendance.attendance_date ?? attendance.clock_out_at,
+      eventType: 'clockOut',
+    }
+  }
+
+  return null
+}
+
 function getTodayStatusLabel(attendance) {
   if (!attendance?.clock_in_at) return 'Not clocked in'
   if (!attendance?.clock_out_at) return 'Currently working'
@@ -88,13 +110,18 @@ function getAttendanceId(result) {
   if (!result) return null
   if (typeof result === 'string') return result
   if (Array.isArray(result)) return getAttendanceId(result[0])
-  return result.id ?? result.attendance_id ?? null
+  return result.id ?? result.attendance_id ?? getAttendanceId(result.attendance)
 }
 
 function getAttendanceDate(result) {
   if (!result) return new Date()
   if (Array.isArray(result)) return getAttendanceDate(result[0])
-  return result.attendance_date ?? result.clock_in_at ?? result.clock_out_at ?? new Date()
+  return (
+    result.attendance_date
+    ?? result.clock_in_at
+    ?? result.clock_out_at
+    ?? getAttendanceDate(result.attendance)
+  )
 }
 
 export default function StaffAttendancePage() {
@@ -104,6 +131,7 @@ export default function StaffAttendancePage() {
   const [submitting, setSubmitting] = useState(false)
   const [capturedPhoto, setCapturedPhoto] = useState(null)
   const [pendingEvidence, setPendingEvidence] = useState(null)
+  const submittingRef = useRef(false)
   const [messageApi, contextHolder] = message.useMessage()
 
   const employeeName = getFullName(profile) || user?.email || 'Employee'
@@ -118,6 +146,7 @@ export default function StaffAttendancePage() {
     try {
       const attendance = await getTodayAttendance()
       setTodayAttendance(attendance)
+      setPendingEvidence(getPendingEvidence(attendance))
       setCapturedPhoto(null)
     } catch (error) {
       messageApi.error(error.message || 'Unable to load today\'s attendance.')
@@ -133,6 +162,7 @@ export default function StaffAttendancePage() {
       .then((attendance) => {
         if (!active) return
         setTodayAttendance(attendance)
+        setPendingEvidence(getPendingEvidence(attendance))
         setCapturedPhoto(null)
       })
       .catch((error) => {
@@ -163,8 +193,7 @@ export default function StaffAttendancePage() {
   }
 
   const handleContinue = async (result) => {
-    const actionToSubmit = pendingEvidence?.eventType ?? nextAction
-    if (!actionToSubmit || submitting) return
+    if (submittingRef.current || submitting) return
 
     const photoBlob = result?.blob
     if (!(photoBlob instanceof Blob)) {
@@ -172,12 +201,27 @@ export default function StaffAttendancePage() {
       return
     }
 
+    const actionToSubmit = pendingEvidence?.eventType ?? nextAction
+    if (!actionToSubmit) return
+
+    submittingRef.current = true
+
     setSubmitting(true)
 
     let attendanceId = pendingEvidence?.attendanceId ?? null
     let attendanceDate = pendingEvidence?.attendanceDate ?? null
 
     try {
+      if (actionToSubmit === 'clockOut') {
+        const currentAttendance = await getTodayAttendance()
+        const hasActiveSession = currentAttendance?.clock_in_at && !currentAttendance?.clock_out_at
+
+        if (!hasActiveSession) {
+          setTodayAttendance(currentAttendance)
+          throw new Error('Your attendance status changed. Refresh the page before submitting clock-out.')
+        }
+      }
+
       if (!pendingEvidence) {
         const attendance = actionToSubmit === 'clockIn' ? await clockIn() : await clockOut()
         attendanceId = getAttendanceId(attendance)
@@ -189,7 +233,7 @@ export default function StaffAttendancePage() {
       }
 
       await storeAttendanceSelfie({
-        employeeId: profile?.id || user?.id,
+        employeeId: user?.id || profile?.id,
         attendanceId,
         attendanceDate,
         eventType: actionToSubmit,
@@ -209,6 +253,7 @@ export default function StaffAttendancePage() {
       }
       messageApi.error(getAttendanceErrorMessage(error, 'Unable to submit attendance.'))
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -234,12 +279,12 @@ export default function StaffAttendancePage() {
               <div className="attendance-panel-loading">
                 <Spin indicator={<LoadingOutlined spin />} />
               </div>
-            ) : nextAction ? (
+            ) : effectiveAction ? (
               <Space direction="vertical" size="middle" className="full-width">
                 <Alert
-                  type={nextAction === 'clockIn' ? 'info' : 'warning'}
+                  type={effectiveAction === 'clockIn' ? 'info' : 'warning'}
                   showIcon
-                  message={nextAction === 'clockIn' ? 'Ready to clock in' : 'Ready to clock out'}
+                  message={effectiveAction === 'clockIn' ? 'Ready to submit clock-in evidence' : 'Ready to clock out'}
                   description="The camera must capture a new selfie for this attendance action."
                 />
                 <AttendanceCamera

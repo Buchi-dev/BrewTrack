@@ -499,30 +499,76 @@ a {
   height: 100%;
 }
 
-.camera-placeholder {
+.camera-actions {
+  margin-top: 16px;
+}
+
+.attendance-camera-stage {
+  position: relative;
   display: grid;
-  min-height: 420px;
+  min-height: 460px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #15120f;
+}
+
+.attendance-camera-video,
+.attendance-camera-image {
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+  object-fit: cover;
+}
+
+.attendance-camera-video {
+  transform: scaleX(-1);
+}
+
+.attendance-camera-image {
+  display: block;
+}
+
+.attendance-camera-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
   place-items: center;
   align-content: center;
   gap: 12px;
   padding: 24px;
   text-align: center;
-  border: 1px dashed #b8c4d3;
-  border-radius: 8px;
   background: var(--brand-latte);
 }
 
-.camera-placeholder .anticon {
+.attendance-camera-empty .anticon {
   color: var(--brand-amber-dark);
   font-size: 48px;
 }
 
-.camera-placeholder .ant-typography {
+.attendance-camera-empty .ant-typography {
   max-width: 520px;
   margin-bottom: 0;
 }
 
-.camera-actions {
+.face-guide {
+  position: absolute;
+  inset: 12% 21%;
+  border: 3px solid rgba(255, 255, 255, 0.84);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 999px rgba(0, 0, 0, 0.18),
+    0 0 24px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.attendance-camera-stage.is-preview .face-guide {
+  display: none;
+}
+
+.camera-alert {
   margin-top: 16px;
 }
 
@@ -620,8 +666,10 @@ a {
     gap: 8px !important;
   }
 
-  .camera-placeholder {
-    min-height: 320px;
+  .attendance-camera-stage,
+  .attendance-camera-video,
+  .attendance-camera-image {
+    min-height: 360px;
   }
 
   .metric-card .ant-card-body {

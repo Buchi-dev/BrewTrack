@@ -743,12 +743,40 @@ a {
 }
 
 .table-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px !important;
   width: 100%;
   margin-bottom: 16px;
 }
 
-.table-toolbar .ant-input-affix-wrapper {
-  min-width: min(320px, 100%);
+.table-toolbar .ant-space-item {
+  max-width: 100%;
+}
+
+.table-toolbar .ant-input-search {
+  max-width: 100%;
+}
+
+.table-toolbar .ant-input-search .ant-input-group {
+  display: flex;
+  width: 100%;
+}
+
+.table-toolbar .ant-input-search .ant-input-affix-wrapper {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.table-toolbar .ant-input-search .ant-input-group-addon {
+  flex: 0 0 auto;
+}
+
+.table-toolbar .ant-select,
+.table-toolbar .ant-picker {
+  max-width: 100%;
 }
 
 .table-subtext {
@@ -775,6 +803,103 @@ a {
 
 .status-tag {
   margin-top: 12px;
+}
+
+.schedule-toolbar-card,
+.station-schedule-card,
+.staff-station-card {
+  border: 1px solid var(--brand-line);
+}
+
+.schedule-toolbar-card {
+  margin-bottom: 16px;
+}
+
+.schedule-toolbar {
+  display: flex !important;
+  align-items: flex-end;
+  gap: 12px !important;
+}
+
+.schedule-toolbar > .ant-space-item:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.schedule-summary-pill {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffaf3;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.schedule-summary-pill .anticon {
+  color: var(--brand-amber-dark);
+}
+
+.station-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.station-schedule-card .ant-card-head {
+  min-height: 54px;
+}
+
+.station-schedule-card .ant-card-body {
+  min-height: 180px;
+}
+
+.schedule-assignment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-assignment {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffdf9;
+}
+
+.schedule-assignment-main {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.schedule-assignment-meta {
+  font-size: 12px;
+}
+
+.staff-station-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.staff-station-panel h3.ant-typography {
+  margin: 2px 0 8px;
+  font-size: 22px;
+}
+
+.staff-station-note {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffaf3;
 }
 
 .camera-card {
@@ -1264,6 +1389,27 @@ a {
 
   .page-actions .ant-space {
     gap: 8px !important;
+  }
+
+  .table-toolbar .ant-space-item,
+  .schedule-toolbar .ant-space-item,
+  .table-toolbar .ant-input-search,
+  .table-toolbar .ant-select,
+  .table-toolbar .ant-picker,
+  .table-toolbar .ant-btn,
+  .schedule-toolbar .ant-input,
+  .schedule-toolbar .schedule-summary-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .schedule-toolbar {
+    display: grid !important;
+    width: 100%;
+  }
+
+  .station-schedule-grid {
+    grid-template-columns: 1fr;
   }
 
   .attendance-camera-stage,

@@ -7,8 +7,9 @@ import {
   EnvironmentOutlined,
   HistoryOutlined,
   ReloadOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Row, Statistic, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Empty, List, Row, Statistic, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -18,6 +19,12 @@ import {
   getStaffAttendanceHistory,
   getTodayAttendance,
 } from '../../services/attendanceService.js'
+import {
+  getStationLabel,
+  getStationRoleLabel,
+  getTodayStationAssignment,
+  formatScheduleTimeRange,
+} from '../../services/manager/stationScheduleService.js'
 import { formatDate, formatTime } from '../../utils/date.js'
 import AttendanceFlowModal from '../attendance/AttendanceFlowModal.jsx'
 
@@ -53,9 +60,14 @@ function getCompletedCount(records) {
   return records.filter((record) => record.clock_in_at && record.clock_out_at).length
 }
 
+function getTeamMemberName(member) {
+  return [member?.firstName, member?.middleName, member?.lastName].filter(Boolean).join(' ') || 'Unnamed staff'
+}
+
 export default function StaffHomePage() {
   const { profile } = useAuth()
   const [todayAttendance, setTodayAttendance] = useState(null)
+  const [todaySchedule, setTodaySchedule] = useState(null)
   const [recentRecords, setRecentRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
@@ -69,13 +81,15 @@ export default function StaffHomePage() {
     setErrorMessage(null)
 
     try {
-      const [today, history] = await Promise.all([
+      const [today, history, schedule] = await Promise.all([
         getTodayAttendance(),
         getStaffAttendanceHistory({ page: 1, pageSize: 31 }),
+        getTodayStationAssignment(),
       ])
 
       setTodayAttendance(today)
       setRecentRecords(history.records)
+      setTodaySchedule(schedule)
     } catch (error) {
       setErrorMessage(error.message || 'Unable to load attendance summary.')
     } finally {
@@ -89,11 +103,13 @@ export default function StaffHomePage() {
     Promise.all([
       getTodayAttendance(),
       getStaffAttendanceHistory({ page: 1, pageSize: 31 }),
+      getTodayStationAssignment(),
     ])
-      .then(([today, history]) => {
+      .then(([today, history, schedule]) => {
         if (!active) return
         setTodayAttendance(today)
         setRecentRecords(history.records)
+        setTodaySchedule(schedule)
         setErrorMessage(null)
       })
       .catch((error) => {
@@ -112,6 +128,8 @@ export default function StaffHomePage() {
   const completedThisMonth = useMemo(() => getCompletedCount(recentRecords), [recentRecords])
   const nextAction = getNextActionText(todayAttendance)
   const isComplete = nextAction === 'View attendance'
+  const trainer = todaySchedule?.team?.find((member) => member.employeeId === todaySchedule.trainerEmployeeId)
+  const trainee = todaySchedule?.team?.find((member) => member.trainerEmployeeId === profile?.id)
 
   return (
     <>
@@ -176,8 +194,8 @@ export default function StaffHomePage() {
         </Col>
         <Col xs={24} md={8}>
           <Card className="staff-metric-card">
-            <Statistic title="Assigned branch" value={branchName} loading={loading} />
-            <Text type="secondary">Your attendance is filed against your assigned branch.</Text>
+            <Statistic title="Primary station" value={branchName} loading={loading} />
+            <Text type="secondary">Your attendance is filed against your assigned station.</Text>
           </Card>
         </Col>
         <Col xs={24} md={8}>
@@ -214,6 +232,56 @@ export default function StaffHomePage() {
                 <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(todayAttendance?.clock_out_at)}</Text></div>
               </div>
             </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card
+            className="staff-station-card staff-lower-card"
+            title={<span className="staff-card-title"><TeamOutlined /> Station assignment</span>}
+          >
+            {todaySchedule ? (
+              <div className="staff-station-panel">
+                <div>
+                  <Text type="secondary">Today</Text>
+                  <Typography.Title level={3}>{getStationLabel(todaySchedule)}</Typography.Title>
+                  <Tag color={todaySchedule.stationRole === 'trainee' ? 'gold' : 'blue'}>
+                    {getStationRoleLabel(todaySchedule.stationRole)}
+                  </Tag>
+                  <Tag color="purple">
+                    {formatScheduleTimeRange(todaySchedule.scheduledStart, todaySchedule.scheduledEnd)}
+                  </Tag>
+                </div>
+                {trainer && (
+                  <div className="staff-station-note">
+                    <Text type="secondary">Trainer</Text>
+                    <Text strong>{getTeamMemberName(trainer)}</Text>
+                  </div>
+                )}
+                {trainee && (
+                  <div className="staff-station-note">
+                    <Text type="secondary">Trainee</Text>
+                    <Text strong>{getTeamMemberName(trainee)}</Text>
+                  </div>
+                )}
+                <List
+                  size="small"
+                  dataSource={todaySchedule.team ?? []}
+                  renderItem={(member) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        title={getTeamMemberName(member)}
+                        description={`${getStationRoleLabel(member.stationRole)} • ${formatScheduleTimeRange(
+                          member.scheduledStart,
+                          member.scheduledEnd,
+                        )}`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              </div>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No station assignment yet" />
+            )}
           </Card>
         </Col>
         <Col xs={24} lg={8}>

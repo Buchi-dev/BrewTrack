@@ -7,6 +7,7 @@ export const ROUTES = {
   staffProfile: '/staff/profile',
   managerDashboard: '/manager',
   managerAttendance: '/manager/attendance',
+  managerSchedules: '/manager/schedules',
   managerEmployees: '/manager/employees',
   managerBranches: '/manager/branches',
   managerReports: '/manager/reports',

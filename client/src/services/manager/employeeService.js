@@ -76,6 +76,21 @@ export async function listEmployees({ page = 1, pageSize = 10, search, status, b
   return { rows: data ?? [], count: count ?? 0 }
 }
 
+export async function listActiveStaff() {
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, middle_name, last_name, employee_number, role, status')
+    .eq('role', 'staff')
+    .eq('status', 'active')
+    .order('last_name', { ascending: true })
+    .order('first_name', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
 export async function saveEmployeeProfile(employeeId, values) {
   if (!supabase || !employeeId) return null
 

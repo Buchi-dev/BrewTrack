@@ -158,7 +158,7 @@ function toCsvRows(rows) {
       'Attendance Date',
       'Employee',
       'Employee Number',
-      'Branch',
+      'Station',
       'Clock In',
       'Clock Out',
       'Status',
@@ -329,7 +329,7 @@ export default function ManagerReportsPage() {
       ),
     },
     {
-      title: 'Branch',
+      title: 'Station',
       dataIndex: 'branches',
       key: 'branch',
       responsive: ['md'],
@@ -458,7 +458,7 @@ export default function ManagerReportsPage() {
           />
 
           <Select
-            placeholder="Branch"
+            placeholder="Station"
             allowClear
             showSearch
             optionFilterProp="label"

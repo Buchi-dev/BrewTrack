@@ -13,6 +13,7 @@ import ManagerBranchesPage from '../features/manager/ManagerBranchesPage.jsx'
 import ManagerDashboardPage from '../features/manager/ManagerDashboardPage.jsx'
 import ManagerEmployeesPage from '../features/manager/ManagerEmployeesPage.jsx'
 import ManagerReportsPage from '../features/manager/ManagerReportsPage.jsx'
+import ManagerSchedulesPage from '../features/manager/ManagerSchedulesPage.jsx'
 import ManagerSettingsPage from '../features/manager/ManagerSettingsPage.jsx'
 import StaffHistoryPage from '../features/staff/StaffHistoryPage.jsx'
 import StaffHomePage from '../features/staff/StaffHomePage.jsx'
@@ -44,6 +45,7 @@ export default function AppRouter() {
           <Route element={<AppLayout section="manager" />}>
             <Route path={ROUTES.managerDashboard} element={<ManagerDashboardPage />} />
             <Route path={ROUTES.managerAttendance} element={<ManagerAttendancePage />} />
+            <Route path={ROUTES.managerSchedules} element={<ManagerSchedulesPage />} />
             <Route path={ROUTES.managerEmployees} element={<ManagerEmployeesPage />} />
             <Route path={ROUTES.managerBranches} element={<ManagerBranchesPage />} />
             <Route path={ROUTES.managerReports} element={<ManagerReportsPage />} />

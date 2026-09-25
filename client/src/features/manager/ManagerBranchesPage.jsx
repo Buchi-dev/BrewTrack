@@ -31,7 +31,7 @@ export default function ManagerBranchesPage() {
       setRows(result.rows)
       setCount(result.count)
     } catch (error) {
-      message.error(error.message || 'Unable to load branches.')
+      message.error(error.message || 'Unable to load stations.')
     } finally {
       setLoading(false)
     }
@@ -47,7 +47,7 @@ export default function ManagerBranchesPage() {
         setRows(result.rows)
         setCount(result.count)
       } catch (error) {
-        if (isMounted) message.error(error.message || 'Unable to load branches.')
+        if (isMounted) message.error(error.message || 'Unable to load stations.')
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -83,7 +83,7 @@ export default function ManagerBranchesPage() {
 
   const columns = [
     {
-      title: 'Branch',
+      title: 'Station',
       dataIndex: 'name',
       key: 'name',
       render: (name, record) => (
@@ -125,13 +125,13 @@ export default function ManagerBranchesPage() {
     setSaving(true)
     try {
       await saveBranch(values, editingBranch?.id)
-      message.success(editingBranch ? 'Branch updated.' : 'Branch created.')
+      message.success(editingBranch ? 'Station updated.' : 'Station created.')
       setModalOpen(false)
       setEditingBranch(null)
       form.resetFields()
       loadData(filters)
     } catch (error) {
-      message.error(error.message || 'Unable to save branch.')
+      message.error(error.message || 'Unable to save station.')
     } finally {
       setSaving(false)
     }
@@ -151,11 +151,11 @@ export default function ManagerBranchesPage() {
     <>
       <PageHeader
         eyebrow="Manager"
-        title="Branches"
-        description="Maintain branch records and optional location verification settings."
+        title="Stations"
+        description="Maintain station records and optional location verification settings."
         actions={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>
-            Add branch
+            Add station
           </Button>
         }
       />
@@ -164,7 +164,7 @@ export default function ManagerBranchesPage() {
         <Space wrap className="table-toolbar">
           <Input.Search
             prefix={<SearchOutlined />}
-            placeholder="Search branches"
+            placeholder="Search stations"
             allowClear
             enterButton
             onSearch={(value) => applyFilters({ search: value })}
@@ -190,18 +190,18 @@ export default function ManagerBranchesPage() {
       </Card>
 
       <Modal
-        title={editingBranch ? 'Edit branch' : 'Add branch'}
+        title={editingBranch ? 'Edit station' : 'Add station'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleSave}
         confirmLoading={saving}
-        okText={editingBranch ? 'Save changes' : 'Create branch'}
+        okText={editingBranch ? 'Save changes' : 'Create station'}
       >
         <Form form={form} layout="vertical" requiredMark={false}>
-          <Form.Item name="name" label="Branch name" rules={[{ required: true, message: 'Enter a branch name.' }]}>
+          <Form.Item name="name" label="Station name" rules={[{ required: true, message: 'Enter a station name.' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="code" label="Branch code" rules={[{ required: true, message: 'Enter a branch code.' }]}>
+          <Form.Item name="code" label="Station code" rules={[{ required: true, message: 'Enter a station code.' }]}>
             <Input />
           </Form.Item>
           <Form.Item name="address" label="Address">

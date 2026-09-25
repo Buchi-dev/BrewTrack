@@ -87,7 +87,7 @@ function AttendanceEmptyState({ onAddEmployee, onOpenAttendance }) {
         <div className="dashboard-empty-copy">
           <Text strong>No attendance records yet today</Text>
           <Text type="secondary">
-            Once staff clock in, their branch, time in, time out, and status will appear here.
+            Once staff clock in, their station, time in, time out, and status will appear here.
           </Text>
         </div>
       }
@@ -158,7 +158,7 @@ export default function ManagerDashboardPage() {
         ),
       },
       {
-        title: 'Branch',
+        title: 'Station',
         dataIndex: 'branches',
         key: 'branch',
         responsive: ['md'],
@@ -271,7 +271,7 @@ export default function ManagerDashboardPage() {
                       <List.Item>
                         <List.Item.Meta
                           title={getFullName(record.profiles)}
-                          description={`${record.branches?.name || 'No branch'} • ${formatDateTime(record.clock_in_at, {
+                          description={`${record.branches?.name || 'No station'} • ${formatDateTime(record.clock_in_at, {
                             dateStyle: undefined,
                           })}`}
                         />
@@ -325,11 +325,11 @@ export default function ManagerDashboardPage() {
 
           <NextStepCard
             icon={<BankOutlined />}
-            title="Set up branches"
-            description="Keep staff assignments clear so attendance records are easy to filter later."
+            title="Set up stations"
+            description="Keep station assignments clear so attendance records are easy to filter later."
             action={
               <Button size="small" onClick={() => navigate(ROUTES.managerBranches)}>
-                Manage branches
+                Manage stations
               </Button>
             }
           />

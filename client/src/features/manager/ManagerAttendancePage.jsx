@@ -292,7 +292,7 @@ export default function ManagerAttendancePage() {
       ),
     },
     {
-      title: 'Branch',
+      title: 'Station',
       dataIndex: 'branches',
       key: 'branch',
       responsive: ['md'],
@@ -348,7 +348,7 @@ export default function ManagerAttendancePage() {
       render: (value) => formatDate(value),
     },
     {
-      title: 'Branch',
+      title: 'Station',
       dataIndex: 'branches',
       key: 'branch',
       responsive: ['md'],
@@ -408,7 +408,7 @@ export default function ManagerAttendancePage() {
             }
           />
           <Select
-            placeholder="Branch"
+            placeholder="Station"
             allowClear
             showSearch
             optionFilterProp="label"
@@ -459,7 +459,7 @@ export default function ManagerAttendancePage() {
             <Descriptions.Item label="Employee no.">
               {selectedRecord?.profiles?.employee_number || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="Branch">{selectedRecord?.branches?.name || '--'}</Descriptions.Item>
+            <Descriptions.Item label="Station">{selectedRecord?.branches?.name || '--'}</Descriptions.Item>
             <Descriptions.Item label="Attendance date">{formatDate(selectedRecord?.attendance_date)}</Descriptions.Item>
             <Descriptions.Item label="Clock in">{formatDateTime(selectedRecord?.clock_in_at)}</Descriptions.Item>
             <Descriptions.Item label="Clock out">{formatDateTime(selectedRecord?.clock_out_at)}</Descriptions.Item>

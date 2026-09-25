@@ -27,8 +27,9 @@ const { Text } = Typography
 const managerItems = [
   { key: ROUTES.managerDashboard, icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: ROUTES.managerAttendance, icon: <ClockCircleOutlined />, label: 'Attendance' },
+  { key: ROUTES.managerSchedules, icon: <CalendarOutlined />, label: 'Schedules' },
   { key: ROUTES.managerEmployees, icon: <TeamOutlined />, label: 'Employees' },
-  { key: ROUTES.managerBranches, icon: <BankOutlined />, label: 'Branches' },
+  { key: ROUTES.managerBranches, icon: <BankOutlined />, label: 'Stations' },
   { key: ROUTES.managerReports, icon: <FileTextOutlined />, label: 'Reports' },
   { key: ROUTES.managerAudit, icon: <AuditOutlined />, label: 'Audit' },
   { key: ROUTES.managerSettings, icon: <SettingOutlined />, label: 'Settings' },

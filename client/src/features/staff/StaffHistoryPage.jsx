@@ -91,7 +91,7 @@ export default function StaffHistoryPage() {
       render: (value) => formatDate(value),
     },
     {
-      title: 'Branch',
+      title: 'Station',
       key: 'branch',
       render: (_, record) => getBranchName(record),
     },

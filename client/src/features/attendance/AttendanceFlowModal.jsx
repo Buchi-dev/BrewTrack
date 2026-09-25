@@ -64,7 +64,7 @@ export default function AttendanceFlowModal({ open, attendance, onClose, onSubmi
   const effectiveAction = pendingEvidence?.eventType ?? nextAction
   const actionLabel = effectiveAction ? ATTENDANCE_ACTIONS[effectiveAction] : 'COMPLETED'
   const employeeName = getFullName(profile) || user?.email || 'Employee'
-  const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Assigned branch'
+  const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Assigned station'
   const watermarkLines = useMemo(
     () => [employeeName.toUpperCase(), actionLabel, formatDateTime(new Date()), branchName],
     [actionLabel, branchName, employeeName],

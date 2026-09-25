@@ -118,7 +118,7 @@ export default function ManagerEmployeesPage() {
     },
     { title: 'Employee No.', dataIndex: 'employee_number', key: 'employeeNumber', responsive: ['md'] },
     {
-      title: 'Branch',
+      title: 'Station',
       key: 'branch',
       render: (_, record) => getPrimaryBranch(record)?.name || <Text type="secondary">Unassigned</Text>,
     },
@@ -184,7 +184,7 @@ export default function ManagerEmployeesPage() {
       <PageHeader
         eyebrow="Manager"
         title="Employees"
-        description="Manage staff profiles, branch assignments, roles, and account status."
+        description="Manage staff profiles, station assignments, roles, and account status."
         actions={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>
             Add employee
@@ -211,7 +211,7 @@ export default function ManagerEmployeesPage() {
             style={{ minWidth: 160 }}
           />
           <Select
-            placeholder="Branch"
+            placeholder="Station"
             allowClear
             showSearch
             optionFilterProp="label"
@@ -255,7 +255,7 @@ export default function ManagerEmployeesPage() {
           <Form.Item name="phone" label="Phone">
             <Input />
           </Form.Item>
-          <Form.Item name="branch_id" label="Primary branch">
+          <Form.Item name="branch_id" label="Primary station">
             <Select allowClear showSearch optionFilterProp="label" options={branchOptions} />
           </Form.Item>
           <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Choose a role.' }]}>
@@ -273,7 +273,7 @@ export default function ManagerEmployeesPage() {
           showIcon
           icon={<InfoCircleOutlined />}
           message="Account creation needs a secure invite flow"
-          description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile and branch assignment here. A secure invite function belongs in a later backend milestone."
+          description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile and station assignment here. A secure invite function belongs in a later backend milestone."
         />
       </Modal>
     </>

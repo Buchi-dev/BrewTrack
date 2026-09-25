@@ -11,6 +11,32 @@ export async function getTodayAttendance() {
   return data
 }
 
+export async function clockIn({ photoPath = null, latitude = null, longitude = null } = {}) {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.rpc('clock_in', {
+    p_clock_in_photo_path: photoPath,
+    p_clock_in_latitude: latitude,
+    p_clock_in_longitude: longitude,
+  })
+
+  if (error) throw error
+  return data
+}
+
+export async function clockOut({ photoPath = null, latitude = null, longitude = null } = {}) {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.rpc('clock_out', {
+    p_clock_out_photo_path: photoPath,
+    p_clock_out_latitude: latitude,
+    p_clock_out_longitude: longitude,
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function getManagerTodayAttendance(limit = MANAGER_TODAY_LIMIT) {
   if (!supabase) return []
 

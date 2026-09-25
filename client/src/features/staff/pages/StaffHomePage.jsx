@@ -11,15 +11,15 @@ import {
 import { Alert, Button, Card, Col, Row, Statistic, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes.js'
-import AttendanceFlowModal from '../../features/attendance/AttendanceFlowModal.jsx'
-import { useAuth } from '../../hooks/useAuth.js'
+import PageHeader from '../../../components/common/PageHeader.jsx'
+import { ROUTES } from '../../../constants/routes.js'
+import { useAuth } from '../../../hooks/useAuth.js'
 import {
   getStaffAttendanceHistory,
   getTodayAttendance,
-} from '../../services/attendanceService.js'
-import { formatDate, formatTime } from '../../utils/date.js'
-import PageHeader from '../shared/PageHeader.jsx'
+} from '../../../services/attendanceService.js'
+import { formatDate, formatTime } from '../../../utils/date.js'
+import AttendanceFlowModal from '../../attendance/AttendanceFlowModal.jsx'
 
 const { Text } = Typography
 

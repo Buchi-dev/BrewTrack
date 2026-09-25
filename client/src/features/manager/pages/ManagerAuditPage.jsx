@@ -14,9 +14,10 @@ import {
   Typography,
 } from 'antd'
 import { useEffect, useState } from 'react'
-import { getFullName, listAuditLogs } from '../../services/managerService.js'
-import { formatDateTime } from '../../utils/date.js'
-import PageHeader from '../shared/PageHeader.jsx'
+import PageHeader from '../../../components/common/PageHeader.jsx'
+import { listAuditLogs } from '../../../services/manager/auditService.js'
+import { getFullName } from '../../../services/manager/employeeService.js'
+import { formatDateTime } from '../../../utils/date.js'
 
 const { RangePicker } = DatePicker
 const { Paragraph, Text } = Typography

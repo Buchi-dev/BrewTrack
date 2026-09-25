@@ -1,14 +1,14 @@
 import { EditOutlined, InfoCircleOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
+import PageHeader from '../../../components/common/PageHeader.jsx'
+import { listAllBranches } from '../../../services/manager/branchService.js'
 import {
   getFullName,
   getPrimaryBranch,
-  listAllBranches,
   listEmployees,
   saveEmployeeProfile,
-} from '../../services/managerService.js'
-import PageHeader from '../shared/PageHeader.jsx'
+} from '../../../services/manager/employeeService.js'
 
 const { Text } = Typography
 const PAGE_SIZE = 10

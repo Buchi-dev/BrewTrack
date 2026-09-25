@@ -1,6 +1,6 @@
 import { Card, Descriptions } from 'antd'
-import { useAuth } from '../../hooks/useAuth.js'
-import PageHeader from '../shared/PageHeader.jsx'
+import PageHeader from '../../../components/common/PageHeader.jsx'
+import { useAuth } from '../../../hooks/useAuth.js'
 
 export default function StaffProfilePage() {
   const { profile, user } = useAuth()

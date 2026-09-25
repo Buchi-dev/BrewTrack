@@ -21,19 +21,18 @@ import {
 } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
+import PageHeader from '../../../components/common/PageHeader.jsx'
 import {
-  getFullName,
-  listAllBranches,
   listDailyAttendanceReport,
   listEmployeeAttendanceReport,
-  listEmployees,
   listLateAttendanceReport,
-  logManagerAction,
   listMissingClockOutReport,
   listMonthlyAttendanceReport,
-} from '../../services/managerService.js'
-import { formatDate, formatDateTime } from '../../utils/date.js'
-import PageHeader from '../shared/PageHeader.jsx'
+} from '../../../services/manager/attendanceRecordsService.js'
+import { logManagerAction } from '../../../services/manager/auditService.js'
+import { listAllBranches } from '../../../services/manager/branchService.js'
+import { getFullName, listEmployees } from '../../../services/manager/employeeService.js'
+import { formatDate, formatDateTime } from '../../../utils/date.js'
 
 const { RangePicker } = DatePicker
 const { Text } = Typography

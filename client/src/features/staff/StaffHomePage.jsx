@@ -303,6 +303,7 @@ export default function StaffHomePage() {
         key={`${cameraOpen ? 'open' : 'closed'}-${todayAttendance?.id ?? 'none'}-${todayAttendance?.clock_in_at ?? 'none'}-${todayAttendance?.clock_out_at ?? 'none'}`}
         open={cameraOpen}
         attendance={todayAttendance}
+        assignedStationLabel={todaySchedule ? branchName : null}
         onClose={() => setCameraOpen(false)}
         onSubmitted={() => {
           setCameraOpen(false)

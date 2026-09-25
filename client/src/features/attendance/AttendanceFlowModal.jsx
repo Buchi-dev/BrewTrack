@@ -52,7 +52,19 @@ function getFullName(profile) {
   return [profile?.first_name, profile?.middle_name, profile?.last_name].filter(Boolean).join(' ').trim()
 }
 
-export default function AttendanceFlowModal({ open, attendance, onClose, onSubmitted }) {
+function getAssignedStationLabel({ assignedStationLabel, attendance, profile }) {
+  return (
+    assignedStationLabel
+    || attendance?.stationName
+    || attendance?.station_name
+    || attendance?.branch_name
+    || profile?.branch_name
+    || profile?.assigned_branch_name
+    || 'Assigned station'
+  )
+}
+
+export default function AttendanceFlowModal({ open, attendance, assignedStationLabel, onClose, onSubmitted }) {
   const { profile, user } = useAuth()
   const [pendingEvidence, setPendingEvidence] = useState(() => getPendingEvidence(attendance))
   const [capturedPhoto, setCapturedPhoto] = useState(null)
@@ -64,7 +76,7 @@ export default function AttendanceFlowModal({ open, attendance, onClose, onSubmi
   const effectiveAction = pendingEvidence?.eventType ?? nextAction
   const actionLabel = effectiveAction ? ATTENDANCE_ACTIONS[effectiveAction] : 'COMPLETED'
   const employeeName = getFullName(profile) || user?.email || 'Employee'
-  const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Assigned station'
+  const branchName = getAssignedStationLabel({ assignedStationLabel, attendance, profile })
   const watermarkLines = useMemo(
     () => [employeeName.toUpperCase(), actionLabel, formatDateTime(new Date()), branchName],
     [actionLabel, branchName, employeeName],

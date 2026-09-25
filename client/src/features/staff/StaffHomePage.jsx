@@ -74,7 +74,7 @@ export default function StaffHomePage() {
   const [cameraOpen, setCameraOpen] = useState(false)
 
   const firstName = profile?.first_name || 'there'
-  const branchName = profile?.branch_name || profile?.assigned_branch_name || 'Pending setup'
+  const branchName = todaySchedule ? getStationLabel(todaySchedule) : 'No station scheduled'
 
   const loadSummary = useCallback(async () => {
     setLoading(true)
@@ -194,8 +194,8 @@ export default function StaffHomePage() {
         </Col>
         <Col xs={24} md={8}>
           <Card className="staff-metric-card">
-            <Statistic title="Primary station" value={branchName} loading={loading} />
-            <Text type="secondary">Your attendance is filed against your assigned station.</Text>
+            <Statistic title="Today's station" value={branchName} loading={loading} />
+            <Text type="secondary">Your attendance is filed against today’s schedule.</Text>
           </Card>
         </Col>
         <Col xs={24} md={8}>

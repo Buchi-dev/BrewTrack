@@ -29,8 +29,8 @@ export function getAttendanceErrorMessage(error, fallback = 'Unable to complete 
     return 'No active clock-in record was found. Refresh your status before clocking out.'
   }
 
-  if (/branch|assigned/i.test(message)) {
-    return 'Your account does not have an active branch assignment. Please contact a manager.'
+  if (/station schedule|branch|assigned/i.test(message)) {
+    return 'You do not have a station scheduled for today. Please contact a manager.'
   }
 
   if (/permission|policy|row-level security|rls|forbidden|not authorized/i.test(message)) {

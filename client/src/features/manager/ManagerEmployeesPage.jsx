@@ -1,18 +1,16 @@
 import { EditOutlined, InfoCircleOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
-import { listAllBranches } from '../../services/manager/branchService.js'
 import {
   getFullName,
-  getPrimaryBranch,
   listEmployees,
   saveEmployeeProfile,
 } from '../../services/manager/employeeService.js'
 
 const { Text } = Typography
 const PAGE_SIZE = 10
-const initialEmployeeFilters = { page: 1, pageSize: PAGE_SIZE, search: '', status: null, branchId: null }
+const initialEmployeeFilters = { page: 1, pageSize: PAGE_SIZE, search: '', status: null }
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -36,7 +34,6 @@ export default function ManagerEmployeesPage() {
   const { message } = App.useApp()
   const [form] = Form.useForm()
   const [rows, setRows] = useState([])
-  const [branches, setBranches] = useState([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -47,10 +44,9 @@ export default function ManagerEmployeesPage() {
   async function loadData(nextFilters = filters) {
     setLoading(true)
     try {
-      const [employeeResult, branchRows] = await Promise.all([listEmployees(nextFilters), listAllBranches()])
+      const employeeResult = await listEmployees(nextFilters)
       setRows(employeeResult.rows)
       setCount(employeeResult.count)
-      setBranches(branchRows)
     } catch (error) {
       message.error(error.message || 'Unable to load employees.')
     } finally {
@@ -63,11 +59,10 @@ export default function ManagerEmployeesPage() {
 
     async function loadInitialData() {
       try {
-        const [employeeResult, branchRows] = await Promise.all([listEmployees(initialEmployeeFilters), listAllBranches()])
+        const employeeResult = await listEmployees(initialEmployeeFilters)
         if (!isMounted) return
         setRows(employeeResult.rows)
         setCount(employeeResult.count)
-        setBranches(branchRows)
       } catch (error) {
         if (isMounted) message.error(error.message || 'Unable to load employees.')
       } finally {
@@ -82,15 +77,6 @@ export default function ManagerEmployeesPage() {
     }
   }, [message])
 
-  const branchOptions = useMemo(
-    () =>
-      branches.map((branch) => ({
-        value: branch.id,
-        label: `${branch.name} (${branch.code})`,
-      })),
-    [branches],
-  )
-
   function openEditor(employee) {
     setEditingEmployee(employee)
     form.setFieldsValue({
@@ -101,7 +87,6 @@ export default function ManagerEmployeesPage() {
       phone: employee.phone,
       role: employee.role,
       status: employee.status,
-      branch_id: getPrimaryBranch(employee)?.id,
     })
   }
 
@@ -117,11 +102,6 @@ export default function ManagerEmployeesPage() {
       ),
     },
     { title: 'Employee No.', dataIndex: 'employee_number', key: 'employeeNumber', responsive: ['md'] },
-    {
-      title: 'Station',
-      key: 'branch',
-      render: (_, record) => getPrimaryBranch(record)?.name || <Text type="secondary">Unassigned</Text>,
-    },
     {
       title: 'Role',
       dataIndex: 'role',
@@ -184,7 +164,7 @@ export default function ManagerEmployeesPage() {
       <PageHeader
         eyebrow="Manager"
         title="Employees"
-        description="Manage staff profiles, station assignments, roles, and account status."
+        description="Manage staff profiles, roles, and account status."
         actions={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>
             Add employee
@@ -209,16 +189,6 @@ export default function ManagerEmployeesPage() {
             value={filters.status}
             onChange={(value) => applyFilters({ status: value ?? null })}
             style={{ minWidth: 160 }}
-          />
-          <Select
-            placeholder="Station"
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            options={branchOptions}
-            value={filters.branchId}
-            onChange={(value) => applyFilters({ branchId: value ?? null })}
-            style={{ minWidth: 220 }}
           />
         </Space>
         <Table
@@ -255,9 +225,6 @@ export default function ManagerEmployeesPage() {
           <Form.Item name="phone" label="Phone">
             <Input />
           </Form.Item>
-          <Form.Item name="branch_id" label="Primary station">
-            <Select allowClear showSearch optionFilterProp="label" options={branchOptions} />
-          </Form.Item>
           <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Choose a role.' }]}>
             <Select options={roleOptions} />
           </Form.Item>
@@ -273,7 +240,7 @@ export default function ManagerEmployeesPage() {
           showIcon
           icon={<InfoCircleOutlined />}
           message="Account creation needs a secure invite flow"
-          description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile and station assignment here. A secure invite function belongs in a later backend milestone."
+          description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile here. A secure invite function belongs in a later backend milestone."
         />
       </Modal>
     </>

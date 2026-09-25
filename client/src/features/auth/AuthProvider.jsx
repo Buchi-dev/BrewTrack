@@ -61,6 +61,7 @@ export function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      setLoading(true)
       setSession(nextSession)
 
       try {

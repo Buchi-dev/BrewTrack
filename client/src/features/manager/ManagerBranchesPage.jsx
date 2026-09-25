@@ -1,5 +1,5 @@
 import { EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { App, Button, Card, Form, Input, InputNumber, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
+import { App, Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
 import { listBranches, saveBranch } from '../../services/manager/branchService.js'
@@ -73,10 +73,6 @@ export default function ManagerBranchesPage() {
       name: branch?.name,
       code: branch?.code,
       address: branch?.address,
-      timezone: branch?.timezone || 'Asia/Manila',
-      geofence_radius: branch?.geofence_radius ?? 0,
-      latitude: branch?.latitude,
-      longitude: branch?.longitude,
       is_active: branch?.is_active ?? true,
     })
   }
@@ -94,14 +90,6 @@ export default function ManagerBranchesPage() {
       ),
     },
     { title: 'Code', dataIndex: 'code', key: 'code', responsive: ['sm'] },
-    { title: 'Timezone', dataIndex: 'timezone', key: 'timezone', responsive: ['md'] },
-    {
-      title: 'Geofence',
-      dataIndex: 'geofence_radius',
-      key: 'geofence',
-      responsive: ['lg'],
-      render: (radius) => (radius > 0 ? `${radius} m` : 'Off'),
-    },
     {
       title: 'Status',
       dataIndex: 'is_active',
@@ -206,20 +194,6 @@ export default function ManagerBranchesPage() {
           </Form.Item>
           <Form.Item name="address" label="Address">
             <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item name="timezone" label="Timezone" rules={[{ required: true, message: 'Enter a timezone.' }]}>
-            <Input />
-          </Form.Item>
-          <Space className="form-grid-two" align="start">
-            <Form.Item name="latitude" label="Latitude">
-              <InputNumber min={-90} max={90} precision={6} className="full-width" />
-            </Form.Item>
-            <Form.Item name="longitude" label="Longitude">
-              <InputNumber min={-180} max={180} precision={6} className="full-width" />
-            </Form.Item>
-          </Space>
-          <Form.Item name="geofence_radius" label="Geofence radius in meters">
-            <InputNumber min={0} precision={0} className="full-width" />
           </Form.Item>
           <Form.Item name="is_active" label="Active" valuePropName="checked">
             <Switch />

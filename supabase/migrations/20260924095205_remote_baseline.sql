@@ -1,5 +1,0 @@
--- Baseline migration already recorded in the live Supabase project before this
--- repository's Milestone 2 migration was added locally.
---
--- Keep this file so `supabase db push` can reconcile local migration history
--- with the live project without trying to replay or revert the remote baseline.

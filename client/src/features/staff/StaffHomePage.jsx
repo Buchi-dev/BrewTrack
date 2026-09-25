@@ -132,7 +132,7 @@ export default function StaffHomePage() {
   const trainee = todaySchedule?.team?.find((member) => member.trainerEmployeeId === profile?.id)
 
   return (
-    <>
+    <div className="staff-dashboard-page">
       <PageHeader
         eyebrow="Staff dashboard"
         title={`Good day, ${firstName}`}
@@ -179,7 +179,7 @@ export default function StaffHomePage() {
       </Card>
 
       <Row className="staff-dashboard-metrics" gutter={[16, 16]}>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={8}>
           <Card className="staff-metric-card staff-metric-status">
             <Statistic
               title="Today's status"
@@ -192,13 +192,13 @@ export default function StaffHomePage() {
             </Tag>
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={12} sm={8}>
           <Card className="staff-metric-card">
             <Statistic title="Today's station" value={branchName} loading={loading} />
             <Text type="secondary">Your attendance is filed against today’s schedule.</Text>
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={12} sm={8}>
           <Card className="staff-metric-card">
             <Statistic
               title="Recent completed shifts"
@@ -213,27 +213,6 @@ export default function StaffHomePage() {
       </Row>
 
       <Row className="staff-lower-grid" gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card
-            className="staff-today-card staff-lower-card"
-            title={<span className="staff-card-title"><CoffeeOutlined /> Today’s brew</span>}
-          >
-            <div className="staff-shift-timeline">
-              <div className="staff-shift-line is-active">
-                <span className="staff-shift-dot"><CalendarOutlined /></span>
-                <div><Text strong>{formatDate(new Date())}</Text><Text type="secondary">Your shift at {branchName}</Text></div>
-              </div>
-              <div className={`staff-shift-line ${todayAttendance?.clock_in_at ? 'is-done' : ''}`}>
-                <span className="staff-shift-dot"><ClockCircleOutlined /></span>
-                <div><Text strong>Clock in</Text><Text type="secondary">{formatTime(todayAttendance?.clock_in_at)}</Text></div>
-              </div>
-              <div className={`staff-shift-line ${todayAttendance?.clock_out_at ? 'is-done' : ''}`}>
-                <span className="staff-shift-dot"><CheckCircleOutlined /></span>
-                <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(todayAttendance?.clock_out_at)}</Text></div>
-              </div>
-            </div>
-          </Card>
-        </Col>
         <Col xs={24} lg={8}>
           <Card
             className="staff-station-card staff-lower-card"
@@ -284,6 +263,27 @@ export default function StaffHomePage() {
             )}
           </Card>
         </Col>
+        <Col xs={24} lg={16}>
+          <Card
+            className="staff-today-card staff-lower-card"
+            title={<span className="staff-card-title"><CoffeeOutlined /> Today’s brew</span>}
+          >
+            <div className="staff-shift-timeline">
+              <div className="staff-shift-line is-active">
+                <span className="staff-shift-dot"><CalendarOutlined /></span>
+                <div><Text strong>{formatDate(new Date())}</Text><Text type="secondary">Your shift at {branchName}</Text></div>
+              </div>
+              <div className={`staff-shift-line ${todayAttendance?.clock_in_at ? 'is-done' : ''}`}>
+                <span className="staff-shift-dot"><ClockCircleOutlined /></span>
+                <div><Text strong>Clock in</Text><Text type="secondary">{formatTime(todayAttendance?.clock_in_at)}</Text></div>
+              </div>
+              <div className={`staff-shift-line ${todayAttendance?.clock_out_at ? 'is-done' : ''}`}>
+                <span className="staff-shift-dot"><CheckCircleOutlined /></span>
+                <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(todayAttendance?.clock_out_at)}</Text></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
         <Col xs={24} lg={8}>
           <Card
             className="staff-history-card staff-lower-card"
@@ -309,6 +309,6 @@ export default function StaffHomePage() {
           loadSummary()
         }}
       />
-    </>
+    </div>
   )
 }

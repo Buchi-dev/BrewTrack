@@ -8,13 +8,14 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   LogoutOutlined,
+  MoreOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SettingOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Drawer, Grid, Layout, Menu, Space, Typography, message } from 'antd'
+import { Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, Space, Typography, message } from 'antd'
 import { BRAND } from '../constants/brand.js'
 import { ROUTES } from '../constants/routes.js'
 import { DEFAULT_TIMEZONE } from '../constants/settings.js'
@@ -97,6 +98,58 @@ function NavAccount({ profile, onSignOut }) {
   )
 }
 
+function StaffMobileHeader({ selectedKeys, onNavigate, profile, onSignOut }) {
+  const activeItem = staffItems.find((item) => selectedKeys.includes(item.key)) ?? staffItems[0]
+
+  return (
+    <div className="staff-mobile-header">
+      <div className="staff-mobile-header-row">
+        <div className="staff-mobile-brand" aria-label={BRAND.shortName}>
+          <img src={BRAND.logos.icon} alt="" />
+          <span>{activeItem.label}</span>
+        </div>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'profile',
+                icon: <UserOutlined />,
+                label: getDisplayName(profile),
+                onClick: () => onNavigate(ROUTES.staffProfile),
+              },
+              {
+                key: 'sign-out',
+                icon: <LogoutOutlined />,
+                label: 'Sign out',
+                onClick: onSignOut,
+              },
+            ],
+          }}
+        >
+          <Button type="text" icon={<MoreOutlined />} aria-label="Open account menu" />
+        </Dropdown>
+      </div>
+      <nav className="staff-mobile-tabs" aria-label="Staff navigation">
+        {staffItems.map((item) => {
+          const isActive = selectedKeys.includes(item.key)
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={isActive ? 'is-active' : ''}
+              onClick={() => onNavigate(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
+
 export default function AppLayout({ section }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { pathname } = useLocation()
@@ -105,6 +158,8 @@ export default function AppLayout({ section }) {
   const { profile } = useAuth()
   const [api, contextHolder] = message.useMessage()
   const items = section === 'manager' ? managerItems : staffItems
+  const isStaffSection = section === 'staff'
+  const showStaffMobileHeader = isStaffSection && !screens.md
   const selectedKeys = useMemo(() => {
     const active = items.find((item) => pathname === item.key) ?? items[0]
     return [active.key]
@@ -132,6 +187,11 @@ export default function AppLayout({ section }) {
     />
   )
 
+  function handleNavigate(key) {
+    navigate(key)
+    setDrawerOpen(false)
+  }
+
   return (
     <Layout className="app-layout">
       {contextHolder}
@@ -148,7 +208,7 @@ export default function AppLayout({ section }) {
             <NavAccount profile={profile} onSignOut={handleSignOut} />
           </div>
         </Sider>
-      ) : (
+      ) : !isStaffSection ? (
         <Drawer
           open={drawerOpen}
           placement="left"
@@ -163,26 +223,37 @@ export default function AppLayout({ section }) {
           {menu}
           <NavAccount profile={profile} onSignOut={handleSignOut} />
         </Drawer>
-      )}
+      ) : null}
 
       <Layout>
-        <Header className="topbar">
-          <Space align="center">
-            {!screens.md && (
-              <Button
-                type="text"
-                icon={drawerOpen ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Open navigation"
-              />
-            )}
-            <div>
-              <Text className="eyebrow">{section}</Text>
-              <div className="topbar-title">Attendance workspace</div>
-            </div>
-          </Space>
+        <Header className={`topbar ${showStaffMobileHeader ? 'staff-mobile-topbar' : ''}`}>
+          {showStaffMobileHeader ? (
+            <StaffMobileHeader
+              selectedKeys={selectedKeys}
+              onNavigate={handleNavigate}
+              profile={profile}
+              onSignOut={handleSignOut}
+            />
+          ) : (
+            <>
+              <Space align="center">
+                {!screens.md && (
+                  <Button
+                    type="text"
+                    icon={drawerOpen ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+                    onClick={() => setDrawerOpen(true)}
+                    aria-label="Open navigation"
+                  />
+                )}
+                <div>
+                  <Text className="eyebrow">{section}</Text>
+                  <div className="topbar-title">Attendance workspace</div>
+                </div>
+              </Space>
 
-          <TodayClock />
+              <TodayClock />
+            </>
+          )}
         </Header>
 
         <Content className="app-content">

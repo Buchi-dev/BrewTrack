@@ -1,5 +1,5 @@
-import { ReloadOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Space, Table, Tag, Typography } from 'antd'
+import { CalendarOutlined, ClockCircleOutlined, EnvironmentOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Alert, Button, Card, Pagination, Space, Table, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import EmptyState from '../../components/EmptyState.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -132,7 +132,7 @@ export default function StaffHistoryPage() {
   ]
 
   return (
-    <>
+    <div className="staff-history-page">
       <PageHeader
         eyebrow="History"
         title="My attendance history"
@@ -148,13 +148,78 @@ export default function StaffHistoryPage() {
         <Alert className="section-card" type="error" showIcon message={errorMessage} />
       )}
 
-      <Card>
+      <Card
+        className="staff-history-records-card"
+        title={<span className="staff-card-title"><HistoryOutlined /> Brew history</span>}
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={loadHistory} loading={loading}>
+            Refresh
+          </Button>
+        }
+      >
         <Space direction="vertical" size="middle" className="full-width">
-          <Text type="secondary">
+          <Text type="secondary" className="staff-history-policy-note">
             Showing records allowed by your account permissions. Staff records are protected by
             database policy.
           </Text>
+          <div className="staff-history-mobile-list">
+            {records.length ? (
+              records.map((record) => (
+                <Card key={record.id} className="staff-history-record-card">
+                  <div className="staff-history-record-top">
+                    <div>
+                      <Text className="attendance-kicker">Shift</Text>
+                      <Typography.Title level={3}>{formatDate(record.attendance_date)}</Typography.Title>
+                    </div>
+                    <Tag color={STATUS_COLORS[record.status] ?? 'default'} className="text-capitalize">
+                      {formatStatus(record.status)}
+                    </Tag>
+                  </div>
+                  <div className="staff-history-record-station">
+                    <EnvironmentOutlined />
+                    <Text>{getBranchName(record)}</Text>
+                  </div>
+                  <div className="staff-history-record-grid">
+                    <div>
+                      <Text type="secondary"><ClockCircleOutlined /> Clock in</Text>
+                      <Text strong>{formatTime(record.clock_in_at)}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary"><ClockCircleOutlined /> Clock out</Text>
+                      <Text strong>{formatTime(record.clock_out_at)}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary"><CalendarOutlined /> Late</Text>
+                      <Text strong>{formatMinutes(record.late_minutes)}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary"><CalendarOutlined /> Worked</Text>
+                      <Text strong>{formatMinutes(record.worked_minutes)}</Text>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <EmptyState
+                title="No attendance records yet"
+                description="Completed clock-ins and clock-outs will appear here."
+              />
+            )}
+            {total > pageSize && (
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                simple
+                onChange={(nextPage) => {
+                  setLoading(true)
+                  setPage(nextPage)
+                }}
+              />
+            )}
+          </div>
           <Table
+            className="staff-history-table"
             rowKey="id"
             columns={columns}
             dataSource={records}
@@ -183,6 +248,6 @@ export default function StaffHistoryPage() {
           />
         </Space>
       </Card>
-    </>
+    </div>
   )
 }

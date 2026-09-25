@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
-import { getRange, normalizeSearch } from '../shared/query.js'
+import { getRange, normalizeSearch } from '../query.js'
 
 export async function listBranches({ page = 1, pageSize = 10, search, status } = {}) {
   if (!supabase) return { rows: [], count: 0 }

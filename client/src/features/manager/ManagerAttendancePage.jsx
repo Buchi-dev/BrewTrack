@@ -23,17 +23,17 @@ import {
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
-import PageHeader from '../../../components/common/PageHeader.jsx'
-import { getAttendanceSelfieSignedUrls } from '../../../services/attendanceService.js'
+import PageHeader from '../../components/PageHeader.jsx'
+import { getAttendanceSelfieSignedUrls } from '../../services/attendanceService.js'
 import {
   getManagerAttendanceDetails,
   listAttendanceEvents,
   listEmployeeAttendanceHistory,
   listManagerAttendanceRecords,
-} from '../../../services/manager/attendanceRecordsService.js'
-import { listAllBranches } from '../../../services/manager/branchService.js'
-import { getFullName } from '../../../services/manager/employeeService.js'
-import { formatDate, formatDateTime } from '../../../utils/date.js'
+} from '../../services/manager/attendanceRecordsService.js'
+import { listAllBranches } from '../../services/manager/branchService.js'
+import { getFullName } from '../../services/manager/employeeService.js'
+import { formatDate, formatDateTime } from '../../utils/date.js'
 
 const { RangePicker } = DatePicker
 const { Text } = Typography

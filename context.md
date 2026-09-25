@@ -43,11 +43,10 @@ BrewTrack/
         routes.js
         settings.js
       components/
-        common/
-          EmptyState.jsx
-          NotFoundPage.jsx
-          PageHeader.jsx
-          UnauthorizedPage.jsx
+        EmptyState.jsx
+        NotFoundPage.jsx
+        PageHeader.jsx
+        UnauthorizedPage.jsx
       features/
         attendance/
           AttendanceCamera.jsx
@@ -58,19 +57,17 @@ BrewTrack/
           LoginPage.jsx
           ResetPasswordPage.jsx
         manager/
-          pages/
-            ManagerAttendancePage.jsx
-            ManagerAuditPage.jsx
-            ManagerBranchesPage.jsx
-            ManagerDashboardPage.jsx
-            ManagerEmployeesPage.jsx
-            ManagerReportsPage.jsx
-            ManagerSettingsPage.jsx
+          ManagerAttendancePage.jsx
+          ManagerAuditPage.jsx
+          ManagerBranchesPage.jsx
+          ManagerDashboardPage.jsx
+          ManagerEmployeesPage.jsx
+          ManagerReportsPage.jsx
+          ManagerSettingsPage.jsx
         staff/
-          pages/
-            StaffHistoryPage.jsx
-            StaffHomePage.jsx
-            StaffProfilePage.jsx
+          StaffHistoryPage.jsx
+          StaffHomePage.jsx
+          StaffProfilePage.jsx
       hooks/
         useAuth.js
       layouts/
@@ -86,6 +83,7 @@ BrewTrack/
         attendanceService.js
         authService.js
         profileService.js
+        query.js
         manager/
           attendanceRecordsService.js
           auditService.js
@@ -93,8 +91,6 @@ BrewTrack/
           dashboardService.js
           employeeService.js
           index.js
-        shared/
-          query.js
       utils/
         date.js
         image.js
@@ -115,11 +111,11 @@ BrewTrack/
 - `client/src/assets/`: Brand image assets used by the UI.
 - `client/src/config/`: Environment variable reading and app configuration helpers.
 - `client/src/constants/`: Shared constants for brand text, roles, routes, and setting keys.
-- `client/src/components/common/`: Reusable route-level UI such as headers, empty states, and fallback pages.
+- `client/src/components/`: Reusable route-level UI such as headers, empty states, and fallback pages.
 - `client/src/features/attendance/`: Staff clock-in/clock-out flow components, including camera capture and selfie upload flow UI.
 - `client/src/features/auth/`: Authentication context, provider, login page, and password reset page.
-- `client/src/features/manager/pages/`: Manager-facing route pages.
-- `client/src/features/staff/pages/`: Staff-facing route pages.
+- `client/src/features/manager/`: Manager-facing route pages.
+- `client/src/features/staff/`: Staff-facing route pages.
 - `client/src/hooks/`: Shared React hooks.
 - `client/src/layouts/`: Page shells for authenticated and unauthenticated sections.
 - `client/src/lib/`: Third-party client setup, currently the Supabase browser client.
@@ -132,7 +128,7 @@ BrewTrack/
 - `client/src/services/manager/attendanceRecordsService.js`: Manager attendance search, detail views, employee attendance history, and report loaders.
 - `client/src/services/manager/auditService.js`: Audit log reads and manager action logging.
 - `client/src/services/manager/dashboardService.js`: Manager dashboard summary and today's attendance reads.
-- `client/src/services/shared/query.js`: Shared query helpers for pagination ranges and normalized search input.
+- `client/src/services/query.js`: Shared query helpers for pagination ranges and normalized search input.
 - `client/src/utils/`: Shared formatting and utility helpers.
 - `supabase/`: Supabase local config and SQL migrations.
 - `supabase/migrations/`: Reproducible database migration files.
@@ -182,6 +178,6 @@ For implementation work, inspect only the files directly related to the requeste
 
 - Auth changes usually involve `features/auth/`, `hooks/useAuth.js`, `router/`, `services/authService.js`, and `services/profileService.js`.
 - Attendance flow changes usually involve `features/attendance/`, `services/attendanceService.js`, and `utils/image.js`.
-- Staff page changes usually involve `features/staff/pages/`, `services/attendanceService.js`, and `components/common/`.
-- Manager page changes usually involve `features/manager/pages/`, the matching `services/manager/*Service.js` file, and `components/common/`.
+- Staff page changes usually involve `features/staff/`, `services/attendanceService.js`, and `components/`.
+- Manager page changes usually involve `features/manager/`, the matching `services/manager/*Service.js` file, and `components/`.
 - Supabase/database changes usually involve `supabase/migrations/`, `client/src/lib/supabaseClient.js`, and the relevant service modules.

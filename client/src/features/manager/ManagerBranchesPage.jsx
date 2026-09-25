@@ -1,8 +1,8 @@
 import { EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { App, Button, Card, Form, Input, InputNumber, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
-import PageHeader from '../../../components/common/PageHeader.jsx'
-import { listBranches, saveBranch } from '../../../services/manager/branchService.js'
+import PageHeader from '../../components/PageHeader.jsx'
+import { listBranches, saveBranch } from '../../services/manager/branchService.js'
 
 const { Text } = Typography
 const PAGE_SIZE = 10

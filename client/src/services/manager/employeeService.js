@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
-import { getRange, normalizeSearch } from '../shared/query.js'
+import { getRange, normalizeSearch } from '../query.js'
 
 export function getFullName(profile) {
   return [profile?.first_name, profile?.middle_name, profile?.last_name].filter(Boolean).join(' ') || 'Unnamed employee'

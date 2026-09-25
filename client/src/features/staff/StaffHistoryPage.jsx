@@ -1,10 +1,10 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Space, Table, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
-import EmptyState from '../../../components/common/EmptyState.jsx'
-import PageHeader from '../../../components/common/PageHeader.jsx'
-import { getStaffAttendanceHistory } from '../../../services/attendanceService.js'
-import { formatDate, formatTime } from '../../../utils/date.js'
+import EmptyState from '../../components/EmptyState.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
+import { getStaffAttendanceHistory } from '../../services/attendanceService.js'
+import { formatDate, formatTime } from '../../utils/date.js'
 
 const { Text } = Typography
 

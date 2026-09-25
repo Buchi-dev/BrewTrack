@@ -1,6 +1,6 @@
 import { Card, Col, Form, Input, InputNumber, Row, Switch } from 'antd'
-import PageHeader from '../../../components/common/PageHeader.jsx'
-import { BRAND } from '../../../constants/brand.js'
+import PageHeader from '../../components/PageHeader.jsx'
+import { BRAND } from '../../constants/brand.js'
 
 export default function ManagerSettingsPage() {
   return (

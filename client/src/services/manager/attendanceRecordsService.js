@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
-import { getRange } from '../shared/query.js'
+import { getRange } from '../query.js'
 import { findEmployeeIdsBySearch } from './employeeService.js'
 
 export async function listManagerAttendanceRecords({

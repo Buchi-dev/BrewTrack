@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
-import { getRange, normalizeSearch } from '../shared/query.js'
+import { getRange, normalizeSearch } from '../query.js'
 
 export async function listAuditLogs({
   page = 1,

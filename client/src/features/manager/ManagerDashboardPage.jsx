@@ -11,12 +11,12 @@ import {
 import { App, Button, Card, Col, Empty, Flex, Grid, List, Progress, Row, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import PageHeader from '../../../components/common/PageHeader.jsx'
-import { BRAND } from '../../../constants/brand.js'
-import { ROUTES } from '../../../constants/routes.js'
-import { getManagerDashboardSummary, getManagerTodayAttendance } from '../../../services/manager/dashboardService.js'
-import { getFullName } from '../../../services/manager/employeeService.js'
-import { formatDateTime } from '../../../utils/date.js'
+import PageHeader from '../../components/PageHeader.jsx'
+import { BRAND } from '../../constants/brand.js'
+import { ROUTES } from '../../constants/routes.js'
+import { getManagerDashboardSummary, getManagerTodayAttendance } from '../../services/manager/dashboardService.js'
+import { getFullName } from '../../services/manager/employeeService.js'
+import { formatDateTime } from '../../utils/date.js'
 
 const { Text, Title } = Typography
 

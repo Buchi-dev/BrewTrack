@@ -73,10 +73,21 @@ locations to `stations` while preserving IDs, employee accounts, manager access,
 and attendance evidence. Deploy the migration together with this client update;
 the previous client uses the previous table names.
 
-Managers use **Daily schedule** to choose a date and assign each employee a
-station and one role: Cook, Barista, Cashier (OTD), or Trainee. Staffing summaries
-show missing core roles and the usual 3–4 staff pattern without enforcing a hard
-capacity. Nothing automatically rotates or copies assignments to another day.
+Managers use **Monthly schedule** to choose a month and station, then drag staff
+onto a date or select a date and click a staff name. Choose Cook, Barista,
+Cashier (OTD), or Trainee and save. The calendar uses the month's actual length,
+including leap years. Searchable staff lists highlight people unassigned on the
+selected date; coverage indicators show missing core roles and the usual 3–4
+staff pattern without enforcing a hard capacity.
+
+Select multiple dates in the assignment form to reuse a role and station.
+Copy day repeats a day's assignments on selected dates. Copy week uses the
+Monday–Sunday week containing the selected date; each target is the first day
+of a new seven-day block. Review the preview before saving, then edit individual
+assignments as needed. Copies add assignments and never replace existing ones.
+Conflicts (including other stations, overlapping copies, and attendance) block
+the entire batch. New batches use one database insert so a rejected row cannot
+leave a partially copied schedule. Nothing rotates or copies automatically.
 
 An employee's home station controls manager access; it does not determine their
 daily station or role. A manager must have access to both the employee's home

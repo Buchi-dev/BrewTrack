@@ -6,7 +6,7 @@ import { dateKey, timeLabel, ZONE } from '../lib/attendance'
 export function Modal({ title, subtitle, children, onClose, wide = false }) {
   const dialog = useRef(null)
   useEffect(() => { const el = dialog.current; el.showModal(); return () => el.close() }, [])
-  return <dialog ref={dialog} className={`modal ${wide ? 'wide' : ''}`} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose() }}><div className="modal-head"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20}/></button></div>{children}</dialog>
+  return <dialog ref={dialog} className={`modal ${wide ? 'wide' : ''}`} onCancel={e => { e.preventDefault(); onClose() }} onClick={e => { if (e.target === e.currentTarget) onClose() }}><div className="modal-head"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20}/></button></div>{children}</dialog>
 }
 
 export default function CameraCapture({ employee, station, workRole, type, demo, onClose, onComplete }) {

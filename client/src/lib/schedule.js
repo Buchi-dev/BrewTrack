@@ -34,7 +34,7 @@ export function validateBatch(values, data, today) {
     const station = data.stations.find(s => s.id === value.station_id && s.active)
     if (!employee || !station) throw new Error('Choose active staff and an active station.')
     try { validateAssignment(value, pending, data.records, today) }
-    catch (error) { throw new Error(`${employee.name} · ${value.work_date}: ${error.message}`) }
+    catch (error) { throw new Error(`${employee.name} · ${value.work_date}: ${error.message}`, { cause: error }) }
     pending.push(value)
   }
 }
@@ -50,5 +50,5 @@ export function assignmentLocked(assignment, records, today) {
 export function validateAssignment(values, assignments, records, today, id) {
   if (!monthDays(values.work_date?.slice(0, 7) || '').includes(values.work_date) || !values.employee_id || !values.station_id || !WORK_ROLES.includes(values.work_role)) throw new Error('Choose a date, employee, station, and work role.')
   if (assignmentLocked(values, records, today)) throw new Error('Past schedules and assignments with attendance are locked.')
-  if (assignments.some(a => a.id !== id && a.employee_id === values.employee_id && a.work_date === values.work_date)) throw new Error('This employee already has an assignment for this date. Edit that assignment instead.')
+  if (assignments.some(a => (!id || a.id !== id) && a.employee_id === values.employee_id && a.work_date === values.work_date)) throw new Error('This employee already has an assignment for this date. Edit that assignment instead.')
 }

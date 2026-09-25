@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { dailyRows } from '../src/lib/attendance.js'
-import { assignmentLocked, validateAssignment } from '../src/lib/schedule.js'
+import { assignmentLocked, validateAssignment, monthDays, addDays, weekStart, copyAssignments, validateBatch } from '../src/lib/schedule.js'
 
 const employee = { id: 'e1', name: 'Staff member', station_id: 's1', active: true }
 const assignments = [
@@ -34,4 +34,38 @@ test('validation rejects duplicate dates and invalid work roles', () => {
   assert.throws(() => validateAssignment(assignments[0], assignments, [], '2026-09-25'), /already has/)
   assert.throws(() => validateAssignment({ ...assignments[0], work_role: 'Manager' }, [], [], '2026-09-25'), /Choose/)
   assert.doesNotThrow(() => validateAssignment({ ...assignments[1], work_role: 'Trainee' }, assignments, [], '2026-09-25', 'a2'))
+})
+
+test('calendar uses actual month lengths, including leap years', () => {
+  assert.equal(monthDays('2026-02').length, 28)
+  assert.equal(monthDays('2028-02').length, 29)
+  assert.equal(monthDays('2026-09').length, 30)
+  assert.equal(monthDays('2026-12').length, 31)
+  assert.deepEqual(monthDays('2026-13'), [])
+  assert.equal(addDays('2026-12-31', 1), '2027-01-01')
+  assert.equal(weekStart('2026-09-27'), '2026-09-21')
+})
+const batchData = { employees: [employee], stations: [{ id: 's1', active: true }, { id: 's2', active: true }], assignments, records: [] }
+test('day copy preserves staff and role without copying identity or historical snapshots', () => {
+  const copied = copyAssignments(assignments, 's1', '2026-09-25', ['2026-09-28', '2026-09-29'])
+  assert.deepEqual(copied.map(a => a.work_date), ['2026-09-28', '2026-09-29'])
+  assert.equal(copied[0].id, undefined)
+  assert.equal(copied[0].work_role, 'Cook')
+  assert.doesNotThrow(() => validateBatch(copied, batchData, '2026-09-25'))
+})
+test('week copy maps Monday offsets across month and year boundaries', () => {
+  const copied = copyAssignments(assignments, 's1', '2026-09-27', ['2026-12-28'], true)
+  assert.equal(copied[0].work_date, '2027-01-01')
+  assert.equal(assignments[0].work_date, '2026-09-25')
+})
+test('bulk assignments reject cross-station conflicts, attendance, past dates and overlapping copies', () => {
+  const value = { employee_id: 'e1', station_id: 's1', work_role: 'Cook', work_date: '2026-09-26' }
+  assert.throws(() => validateBatch([value], batchData, '2026-09-25'), /already has/)
+  const future = { ...value, work_date: '2026-09-28' }
+  assert.throws(() => validateBatch([future, future], batchData, '2026-09-25'), /already has/)
+  assert.throws(() => validateBatch([future], { ...batchData, records: [{ employee_id: 'e1', attendance_date: '2026-09-28' }] }, '2026-09-25'), /locked/)
+  assert.throws(() => validateBatch([future], batchData, '2026-09-29'), /locked/)
+  assert.throws(() => validateBatch([{ ...future, work_date: '2026-02-30' }], batchData, '2026-01-01'), /Choose/)
+  assert.throws(() => validateBatch([future], { ...batchData, employees: [{ ...employee, active: false }] }, '2026-09-25'), /active/)
+  assert.throws(() => validateBatch([], batchData, '2026-09-25'), /Choose/)
 })

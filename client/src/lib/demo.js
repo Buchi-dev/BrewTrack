@@ -1,5 +1,5 @@
-import { dateKey } from './attendance'
-import { WORK_ROLES, roleShiftStart } from './schedule'
+import { dateKey } from './attendance.js'
+import { CORE_ROLES, WORK_ROLES, roleShiftStart } from './schedule.js'
 export function makeDemo() {
   const stations = [
     { id: 'b1', name: 'Station 1 · High Street', address: 'Bonifacio High Street, Taguig', shift_start: '09:00', shift_end: '18:00', active: true },
@@ -8,7 +8,7 @@ export function makeDemo() {
     { id: 'b4', name: 'Station 4 · Kapitolyo', address: 'East Capitol Drive, Pasig', shift_start: '09:00', shift_end: '18:00', active: true },
   ]
   const names = ['Isabella Reyes', 'Gabriel Santos', 'Sofia Mendoza', 'Miguel Dela Cruz', 'Olivia Garcia', 'Ethan Villanueva', 'Amelia Torres', 'Lucas Ramos', 'Mia Bautista', 'Noah Fernandez', 'Chloe Navarro', 'Liam Castillo', 'Ava Lim', 'Elijah Tan', 'Emma Cruz', 'James Aquino', 'Charlotte Go', 'Benjamin Lopez', 'Harper Sy', 'Henry Flores', 'Evelyn Diaz', 'Daniel Ong', 'Abigail Chua', 'Matthew Lee']
-  const employees = names.slice(0, 16).map((name, i) => ({ id: `e${i + 1}`, name, code: `BT-${String(i + 1).padStart(3, '0')}`, station_id: stations[i % 4].id, position: 'Team member', email: name.toLowerCase().split(' ')[0] + '@example.com', active: true, created_at: '2026-01-01' }))
+  const employees = names.slice(0, 16).map((name, i) => ({ id: `e${i + 1}`, name, code: `BT-${String(i + 1).padStart(3, '0')}`, station_id: stations[i % 4].id, position: 'Team member', staff_type: i % 8 === 7 ? 'trainee' : 'regular', email: name.toLowerCase().split(' ')[0] + '@example.com', active: true, created_at: '2026-01-01' }))
   const assignments = []
   for (let offset = -6; offset <= 1; offset++) {
     const date = new Date(); date.setDate(date.getDate() + offset)
@@ -16,9 +16,14 @@ export function makeDemo() {
     employees.forEach((employee, i) => {
       const station = stations[((i % 4) + offset + 8) % 4]
       const workRole = WORK_ROLES[(Math.floor(i / 4) + offset + 8) % 4]
-      assignments.push({ id: day + '-' + employee.id, employee_id: employee.id, employee_name: employee.name, station_id: station.id, station_name: station.name, work_date: day, work_role: workRole, shift_start: roleShiftStart(workRole, station.shift_start), shift_end: station.shift_end })
+      assignments.push({ id: day + '-' + employee.id, employee_id: employee.id, employee_name: employee.name, station_id: station.id, station_name: station.name, work_date: day, work_role: workRole, trainer_id: null, shift_start: roleShiftStart(workRole, station.shift_start), shift_end: station.shift_end })
     })
   }
+  assignments.forEach(assignment => {
+    if (assignment.work_role !== 'Trainee') return
+    const trainer = assignments.find(candidate => candidate.work_date === assignment.work_date && candidate.station_id === assignment.station_id && CORE_ROLES.includes(candidate.work_role) && employees.find(e => e.id === candidate.employee_id)?.staff_type === 'regular')
+    assignment.trainer_id = trainer?.employee_id || null
+  })
   const records = []
   for (let offset = 6; offset >= 0; offset--) {
     const date = new Date(); date.setDate(date.getDate() - offset)

@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { dailyRows } from '../src/lib/attendance.js'
-import { assignmentLocked, validateAssignment, monthDays, addDays, weekStart, copyAssignments, validateBatch, roleShiftStart } from '../src/lib/schedule.js'
+import { makeDemo } from '../src/lib/demo.js'
+import { CORE_ROLES, assignmentLocked, validateAssignment, validateRoleForEmployee, monthDays, addDays, weekStart, copyAssignments, validateBatch, roleShiftStart } from '../src/lib/schedule.js'
 
 const employee = { id: 'e1', name: 'Staff member', station_id: 's1', active: true }
 const assignments = [
@@ -34,6 +35,25 @@ test('validation rejects duplicate dates and invalid work roles', () => {
   assert.throws(() => validateAssignment(assignments[0], assignments, [], '2026-09-25'), /already has/)
   assert.throws(() => validateAssignment({ ...assignments[0], work_role: 'Manager' }, [], [], '2026-09-25'), /Choose/)
   assert.doesNotThrow(() => validateAssignment({ ...assignments[1], work_role: 'Trainee' }, assignments, [], '2026-09-25', 'a2'))
+})
+test('trainee roles follow employee type and require a same-day station trainer', () => {
+  const trainee = { id: 'e2', name: 'Trainee', staff_type: 'trainee', active: true }
+  const trainer = { id: 'e3', name: 'Trainer', staff_type: 'regular', active: true }
+  const data = { employees: [trainee, trainer] }
+  const trainerAssignment = { employee_id: 'e3', station_id: 's1', work_date: '2026-09-28', work_role: 'Cook' }
+  assert.throws(() => validateRoleForEmployee({ employee_id: 'e1', station_id: 's1', work_date: '2026-09-28', work_role: 'Trainee', trainer_id: 'e3' }, { employees: [employee, trainer] }, [trainerAssignment]), /Only employees marked/)
+  assert.throws(() => validateRoleForEmployee({ employee_id: 'e2', station_id: 's1', work_date: '2026-09-28', work_role: 'Trainee', trainer_id: null }, data, [trainerAssignment]), /Choose a regular staff trainer/)
+  assert.doesNotThrow(() => validateRoleForEmployee({ employee_id: 'e2', station_id: 's1', work_date: '2026-09-28', work_role: 'Trainee', trainer_id: 'e3' }, data, [trainerAssignment]))
+  assert.throws(() => validateRoleForEmployee({ employee_id: 'e2', station_id: 's1', work_date: '2026-09-28', work_role: 'Trainee', trainer_id: 'e3' }, data, [{ ...trainerAssignment, station_id: 's2' }]), /Cook, Barista, or Cashier/)
+  assert.throws(() => validateRoleForEmployee({ employee_id: 'e2', station_id: 's1', work_date: '2026-09-28', work_role: 'Cook' }, data, [trainerAssignment]), /only receive the Trainee/)
+})
+test('demo trainees use a trainer assigned to the same day and station', () => {
+  const demo = makeDemo()
+  for (const trainee of demo.assignments.filter(a => a.work_role === 'Trainee')) {
+    const trainer = demo.assignments.find(a => a.employee_id === trainee.trainer_id && a.work_date === trainee.work_date && a.station_id === trainee.station_id)
+    assert.ok(trainer, `${trainee.employee_name} should have a same-station trainer`)
+    assert.ok(CORE_ROLES.includes(trainer.work_role), `${trainer.employee_name} must have a core role`)
+  }
 })
 test('cook assignments start one hour before station opening', () => {
   assert.equal(roleShiftStart('Cook', '09:00'), '08:00')

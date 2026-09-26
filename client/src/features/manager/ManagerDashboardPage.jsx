@@ -8,7 +8,7 @@ import {
   TeamOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
-import { App, Button, Card, Col, Empty, Flex, Grid, List, Progress, Row, Space, Table, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, Col, Empty, Flex, Grid, List, Progress, Row, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -247,6 +247,21 @@ export default function ManagerDashboardPage() {
           />
         </Col>
       </Row>
+
+      {(summary.notYetClockedIn > 0 || summary.missingClockOut > 0 || summary.lateToday > 0) && (
+        <Alert
+          className="manager-page-alert dashboard-triage-alert"
+          type="warning"
+          showIcon
+          title="Today has items worth checking"
+          description={`${summary.notYetClockedIn} not clocked in, ${summary.lateToday} late, and ${summary.missingClockOut} missing clock-out. Open attendance when you are ready to review the details.`}
+          action={
+            <Button size="small" type="primary" icon={<FileSearchOutlined />} onClick={() => navigate(ROUTES.managerAttendance)}>
+              Review
+            </Button>
+          }
+        />
+      )}
 
       <Row gutter={[16, 16]} className="section-card">
         <Col xs={24} lg={16}>

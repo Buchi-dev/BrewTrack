@@ -1,6 +1,6 @@
-import { EditOutlined, InfoCircleOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd'
-import { useEffect, useState } from 'react'
+import { EditOutlined, InfoCircleOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Card, Col, Empty, Form, Input, Modal, Row, Select, Space, Statistic, Table, Tag, Typography } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
 import {
   getFullName,
@@ -40,6 +40,16 @@ export default function ManagerEmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [filters, setFilters] = useState(initialEmployeeFilters)
+
+  const employeeSummary = useMemo(
+    () => ({
+      total: count,
+      activeVisible: rows.filter((employee) => employee.status === 'active').length,
+      managerVisible: rows.filter((employee) => employee.role === 'manager').length,
+      needsAttention: rows.filter((employee) => employee.status !== 'active').length,
+    }),
+    [count, rows],
+  )
 
   async function loadData(nextFilters = filters) {
     setLoading(true)
@@ -173,6 +183,37 @@ export default function ManagerEmployeesPage() {
       />
 
       <Card>
+        <Row gutter={[12, 12]} className="manager-summary-grid">
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Employees" value={employeeSummary.total} prefix={<TeamOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Active on page" value={employeeSummary.activeVisible} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Managers on page" value={employeeSummary.managerVisible} prefix={<UserSwitchOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Review on page" value={employeeSummary.needsAttention} />
+            </Card>
+          </Col>
+        </Row>
+
+        <Alert
+          className="manager-page-alert"
+          type="info"
+          showIcon
+          title="Keep names, employee numbers, and account status tidy"
+          description="These fields drive schedules, attendance filters, and reports, so small cleanup here makes every manager page easier to trust."
+        />
+
         <Space wrap className="table-toolbar">
           <Input.Search
             prefix={<SearchOutlined />}
@@ -198,6 +239,9 @@ export default function ManagerEmployeesPage() {
           rowKey="id"
           pagination={{ current: filters.page, pageSize: filters.pageSize, total: count, showSizeChanger: true }}
           onChange={handleTableChange}
+          locale={{
+            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No employees match this view" />,
+          }}
         />
       </Card>
 
@@ -239,7 +283,7 @@ export default function ManagerEmployeesPage() {
           type="info"
           showIcon
           icon={<InfoCircleOutlined />}
-          message="Account creation needs a secure invite flow"
+          title="Account creation needs a secure invite flow"
           description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile here. A secure invite function belongs in a later backend milestone."
         />
       </Modal>

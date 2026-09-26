@@ -1,19 +1,24 @@
-import { CalendarOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { AuditOutlined, CalendarOutlined, EyeOutlined, FileSearchOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import {
+  Alert,
   App,
   Button,
   Card,
+  Col,
   DatePicker,
   Descriptions,
   Drawer,
+  Empty,
   Input,
+  Row,
   Select,
   Space,
+  Statistic,
   Table,
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
 import { listAuditLogs } from '../../services/manager/auditService.js'
 import { getFullName } from '../../services/manager/employeeService.js'
@@ -91,6 +96,21 @@ export default function ManagerAuditPage() {
   const [filters, setFilters] = useState(initialFilters)
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState(null)
+
+  const auditSummary = useMemo(
+    () => ({
+      total: count,
+      creates: rows.filter((log) => log.action?.includes('created')).length,
+      updates: rows.filter((log) => log.action?.includes('updated')).length,
+      exports: rows.filter((log) => log.action?.includes('exported')).length,
+    }),
+    [count, rows],
+  )
+
+  const activeFilterCount = useMemo(
+    () => [filters.search, filters.action, filters.resourceType, filters.startDate || filters.endDate].filter(Boolean).length,
+    [filters],
+  )
 
   async function loadData(nextFilters = filters) {
     setLoading(true)
@@ -210,6 +230,38 @@ export default function ManagerAuditPage() {
       />
 
       <Card>
+        <Row gutter={[12, 12]} className="manager-summary-grid">
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Audit logs" value={auditSummary.total} prefix={<AuditOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Creates on page" value={auditSummary.creates} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Updates on page" value={auditSummary.updates} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Exports on page" value={auditSummary.exports} prefix={<FileSearchOutlined />} />
+            </Card>
+          </Col>
+        </Row>
+
+        <Alert
+          className="manager-page-alert"
+          type="info"
+          showIcon
+          title="Audit logs are for answers, not clutter"
+          description="Filter by action, resource, or date first, then open details only when you need the before-and-after values."
+          action={<Tag color={activeFilterCount ? 'gold' : 'default'}>{activeFilterCount} active filters</Tag>}
+        />
+
         <Space wrap className="table-toolbar">
           <Input.Search
             prefix={<SearchOutlined />}
@@ -258,6 +310,9 @@ export default function ManagerAuditPage() {
           scroll={{ x: 900 }}
           pagination={{ current: filters.page, pageSize: filters.pageSize, total: count, showSizeChanger: true }}
           onChange={handleTableChange}
+          locale={{
+            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No audit logs match this view" />,
+          }}
         />
       </Card>
 

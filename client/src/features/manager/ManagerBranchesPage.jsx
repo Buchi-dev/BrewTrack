@@ -1,6 +1,6 @@
-import { EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { App, Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
-import { useEffect, useState } from 'react'
+import { BankOutlined, EditOutlined, EnvironmentOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Card, Col, Empty, Form, Input, Modal, Row, Select, Space, Statistic, Switch, Table, Tag, Typography } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
 import { listBranches, saveBranch } from '../../services/manager/branchService.js'
 
@@ -23,6 +23,16 @@ export default function ManagerBranchesPage() {
   const [editingBranch, setEditingBranch] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [filters, setFilters] = useState(initialBranchFilters)
+
+  const stationSummary = useMemo(
+    () => ({
+      total: count,
+      activeVisible: rows.filter((station) => station.is_active).length,
+      inactiveVisible: rows.filter((station) => !station.is_active).length,
+      missingAddress: rows.filter((station) => !station.address).length,
+    }),
+    [count, rows],
+  )
 
   async function loadData(nextFilters = filters) {
     setLoading(true)
@@ -149,6 +159,41 @@ export default function ManagerBranchesPage() {
       />
 
       <Card>
+        <Row gutter={[12, 12]} className="manager-summary-grid">
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Stations" value={stationSummary.total} prefix={<BankOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Active on page" value={stationSummary.activeVisible} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Inactive on page" value={stationSummary.inactiveVisible} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Missing address" value={stationSummary.missingAddress} prefix={<EnvironmentOutlined />} />
+            </Card>
+          </Col>
+        </Row>
+
+        <Alert
+          className="manager-page-alert"
+          type={stationSummary.missingAddress ? 'warning' : 'info'}
+          showIcon
+          title={
+            stationSummary.missingAddress
+              ? `${stationSummary.missingAddress} visible station${stationSummary.missingAddress === 1 ? '' : 's'} need an address`
+              : 'Stations are the backbone of scheduling and attendance review'
+          }
+          description="Use clear station names and short codes so managers can scan schedules, reports, and clock-in records quickly."
+        />
+
         <Space wrap className="table-toolbar">
           <Input.Search
             prefix={<SearchOutlined />}
@@ -174,6 +219,9 @@ export default function ManagerBranchesPage() {
           rowKey="id"
           pagination={{ current: filters.page, pageSize: filters.pageSize, total: count, showSizeChanger: true }}
           onChange={handleTableChange}
+          locale={{
+            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No stations match this view" />,
+          }}
         />
       </Card>
 

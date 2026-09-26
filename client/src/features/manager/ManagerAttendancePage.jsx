@@ -1,22 +1,31 @@
 import {
   CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
   EyeOutlined,
+  FieldTimeOutlined,
   HistoryOutlined,
   ReloadOutlined,
   SearchOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import {
+  Alert,
   App,
   Button,
   Card,
+  Col,
   DatePicker,
   Descriptions,
   Drawer,
   Empty,
   Image,
   Input,
+  Row,
   Select,
+  Segmented,
   Space,
+  Statistic,
   Table,
   Tag,
   Timeline,
@@ -199,6 +208,28 @@ export default function ManagerAttendancePage() {
     [branches],
   )
 
+  const pageSummary = useMemo(
+    () => ({
+      total: count,
+      working: rows.filter((record) => record.clock_in_at && !record.clock_out_at).length,
+      late: rows.filter((record) => record.status === 'late' || Number(record.late_minutes ?? 0) > 0).length,
+      missingClockOut: rows.filter((record) => record.clock_in_at && !record.clock_out_at).length,
+    }),
+    [count, rows],
+  )
+
+  const activeFilterCount = useMemo(
+    () =>
+      [
+        filters.search,
+        filters.branchId,
+        filters.status,
+        filters.startDate || filters.endDate,
+        filters.missingClockOut,
+      ].filter(Boolean).length,
+    [filters],
+  )
+
   function applyFilters(partial) {
     const nextFilters = { ...filters, page: 1, ...partial }
     setFilters(nextFilters)
@@ -208,6 +239,25 @@ export default function ManagerAttendancePage() {
   function resetFilters() {
     setFilters(initialFilters)
     loadData(initialFilters)
+  }
+
+  function applyQuickView(value) {
+    if (value === 'needsFollowUp') {
+      applyFilters({ missingClockOut: true, status: null })
+      return
+    }
+
+    if (value === 'late') {
+      applyFilters({ missingClockOut: false, status: 'late' })
+      return
+    }
+
+    if (value === 'completed') {
+      applyFilters({ missingClockOut: false, status: 'completed' })
+      return
+    }
+
+    applyFilters({ missingClockOut: false, status: null })
   }
 
   async function openDetails(record) {
@@ -388,6 +438,65 @@ export default function ManagerAttendancePage() {
       />
 
       <Card>
+        <div className="manager-control-panel">
+          <div>
+            <Text className="attendance-kicker">Quick view</Text>
+            <Segmented
+              value={
+                filters.missingClockOut
+                  ? 'needsFollowUp'
+                  : filters.status === 'late' || filters.status === 'completed'
+                    ? filters.status
+                    : 'all'
+              }
+              onChange={applyQuickView}
+              options={[
+                { label: 'All', value: 'all' },
+                { label: 'Needs follow-up', value: 'needsFollowUp' },
+                { label: 'Late', value: 'late' },
+                { label: 'Completed', value: 'completed' },
+              ]}
+            />
+          </div>
+          <Space wrap className="manager-filter-note">
+            <Tag color={activeFilterCount ? 'gold' : 'default'}>{activeFilterCount} active filters</Tag>
+            <Text type="secondary">{count} matching records</Text>
+          </Space>
+        </div>
+
+        {pageSummary.missingClockOut > 0 && (
+          <Alert
+            className="manager-page-alert"
+            type="warning"
+            showIcon
+            title={`${pageSummary.missingClockOut} visible record${pageSummary.missingClockOut === 1 ? '' : 's'} need clock-out review`}
+            description="Open details to confirm the selfie evidence and event trail before end-of-day cleanup."
+          />
+        )}
+
+        <Row gutter={[12, 12]} className="manager-summary-grid">
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Records" value={pageSummary.total} prefix={<FieldTimeOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Working" value={pageSummary.working} prefix={<ClockCircleOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Late" value={pageSummary.late} prefix={<WarningOutlined />} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Completed" value={rows.filter((record) => record.status === 'completed').length} prefix={<CheckCircleOutlined />} />
+            </Card>
+          </Col>
+        </Row>
+
         <Space wrap className="table-toolbar">
           <Input.Search
             prefix={<SearchOutlined />}
@@ -444,6 +553,14 @@ export default function ManagerAttendancePage() {
           scroll={{ x: 980 }}
           pagination={{ current: filters.page, pageSize: filters.pageSize, total: count, showSizeChanger: true }}
           onChange={handleTableChange}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="No attendance records match this view"
+              />
+            ),
+          }}
         />
       </Card>
 

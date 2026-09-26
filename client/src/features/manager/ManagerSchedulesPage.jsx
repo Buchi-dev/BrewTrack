@@ -5,17 +5,15 @@ import {
   EditOutlined,
   ExclamationCircleOutlined,
   LeftOutlined,
-  PlusOutlined,
   ReloadOutlined,
   RightOutlined,
   TeamOutlined,
-  UserAddOutlined,
 } from '@ant-design/icons'
 import {
   App,
+  Alert,
   Button,
   Card,
-  Empty,
   Form,
   Input,
   Modal,
@@ -66,6 +64,12 @@ function toInputDate(date) {
 function addMonths(date, months) {
   const nextDate = parseInputDate(date)
   nextDate.setMonth(nextDate.getMonth() + months)
+  return toInputDate(nextDate)
+}
+
+function addDays(date, days) {
+  const nextDate = parseInputDate(date)
+  nextDate.setDate(nextDate.getDate() + days)
   return toInputDate(nextDate)
 }
 
@@ -149,88 +153,20 @@ function CommandAssignmentChip({ assignment, onEdit, onDelete }) {
   )
 }
 
-function StaffCard({ employee, isSelected, onSelect }) {
-  return (
-    <button
-      type="button"
-      className={`schedule-staff-card ${isSelected ? 'is-selected' : ''}`}
-      onClick={() => onSelect(employee.id)}
-    >
-      <Text strong title={getFullName(employee)}>{getFullName(employee)}</Text>
-    </button>
-  )
-}
-
 function AssignmentCommandCenter({
-  assignedByEmployeeId,
-  availableStaffCount,
-  selectedStaff,
-  selectedStaffAssignment,
-  selectedStaffStation,
-  selectedStaffId,
   stationGroups,
-  staff,
-  onClearSelectedStaff,
   onDeleteAssignment,
   onEditAssignment,
   onPickRole,
-  onSelectStaff,
 }) {
-  const availableStaff = staff.filter((employee) => !assignedByEmployeeId.has(employee.id))
-
   return (
     <Card className="schedule-command-card">
       <div className="schedule-command-head">
         <div>
           <Text className="attendance-kicker">Assign command center</Text>
-          <Typography.Title level={2}>Pick staff, then role.</Typography.Title>
+          <Typography.Title level={2}>Click a role, then choose staff.</Typography.Title>
         </div>
-        {selectedStaff ? (
-          <div className="schedule-selected-staff">
-            <Text type="secondary">Selected staff</Text>
-            <Text strong>{getFullName(selectedStaff)}</Text>
-            <Button size="small" onClick={onClearSelectedStaff}>Clear</Button>
-          </div>
-        ) : (
-          <div className="schedule-selected-staff is-empty">
-            <UserAddOutlined />
-            <Text strong>Select staff</Text>
-            <Text type="secondary">Then choose a role.</Text>
-          </div>
-        )}
-      </div>
-
-      {selectedStaffAssignment && (
-        <div className="schedule-command-warning">
-          <ExclamationCircleOutlined />
-          <Text>
-            {getFullName(selectedStaff)} is already assigned to {getStationLabel(selectedStaffStation)}.
-          </Text>
-        </div>
-      )}
-
-      <div className="schedule-command-roster">
-        <div className="schedule-command-section-head">
-          <Text strong>Available staff</Text>
-          <Tag color="blue">{availableStaffCount} available</Tag>
-        </div>
-        <div className="schedule-command-staff-grid">
-          {availableStaff.length ? (
-            availableStaff.map((employee) => (
-              <StaffCard
-                key={employee.id}
-                employee={employee}
-                isSelected={selectedStaffId === employee.id}
-                onSelect={onSelectStaff}
-              />
-            ))
-          ) : (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={staff.length ? 'All staff assigned' : 'No active staff'}
-            />
-          )}
-        </div>
+        <Text type="secondary">Station and role are filled from the card you click.</Text>
       </div>
 
       <div className="schedule-command-matrix">
@@ -267,7 +203,7 @@ function AssignmentCommandCenter({
                         disabled={stationIsFull}
                       >
                         <span>{role.label}</span>
-                        {!roleAssignments.length && <small>{selectedStaff ? 'Assign here' : 'Open'}</small>}
+                        {!roleAssignments.length && <small>Open</small>}
                       </button>
                       {roleAssignments.map((assignment) => (
                         <CommandAssignmentChip
@@ -301,7 +237,8 @@ export default function ManagerSchedulesPage() {
   const [saving, setSaving] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAssignment, setEditingAssignment] = useState(null)
-  const [selectedStaffId, setSelectedStaffId] = useState(null)
+  const [isAssignmentContextLocked, setIsAssignmentContextLocked] = useState(false)
+  const [mobileCalendarOpen, setMobileCalendarOpen] = useState(false)
   const selectedRole = Form.useWatch('station_role', form)
   const selectedStationId = Form.useWatch('branch_id', form)
   const selectedEmployee = Form.useWatch('employee_id', form)
@@ -361,7 +298,6 @@ export default function ManagerSchedulesPage() {
 
   const staffById = useMemo(() => new Map(staff.map((employee) => [employee.id, employee])), [staff])
   const stationById = useMemo(() => new Map(stations.map((station) => [station.id, station])), [stations])
-  const selectedStaff = selectedStaffId ? staffById.get(selectedStaffId) : null
 
   const displayAssignments = useMemo(
     () =>
@@ -376,21 +312,19 @@ export default function ManagerSchedulesPage() {
   const assignedByEmployeeId = useMemo(() => {
     return new Map(displayAssignments.map((assignment) => [assignment.employee_id, assignment]))
   }, [displayAssignments])
-  const selectedStaffAssignment = selectedStaffId ? assignedByEmployeeId.get(selectedStaffId) : null
 
   const staffOptions = useMemo(
     () =>
-      staff.map((employee) => {
-        const assignedAssignment = assignedByEmployeeId.get(employee.id)
-        const isCurrentEditEmployee = editingAssignment?.employee_id === employee.id
-        return {
+      staff
+        .filter((employee) => {
+          const assignedAssignment = assignedByEmployeeId.get(employee.id)
+          const isCurrentEditEmployee = editingAssignment?.employee_id === employee.id
+          return !assignedAssignment || isCurrentEditEmployee
+        })
+        .map((employee) => ({
           value: employee.id,
-          disabled: Boolean(assignedAssignment && !isCurrentEditEmployee),
-          label: `${getFullName(employee)}${employee.employee_number ? ` (${employee.employee_number})` : ''}${
-            assignedAssignment && !isCurrentEditEmployee ? ' - already scheduled' : ''
-          }`,
-        }
-      }),
+          label: getFullName(employee),
+        })),
     [assignedByEmployeeId, editingAssignment?.employee_id, staff],
   )
 
@@ -410,7 +344,6 @@ export default function ManagerSchedulesPage() {
   }, [displayAssignments, scheduleDate, selectedEmployee, selectedStationId])
 
   const stationGroups = useMemo(() => groupByStation(stations, displayAssignments), [displayAssignments, stations])
-  const availableStaffCount = staff.length - assignedByEmployeeId.size
   const staffedStationCount = stationGroups.filter((group) => group.assignments.length > 0).length
   const needsAttentionCount = stationGroups.filter(
     (group) => group.assignments.length > 0 && group.assignments.length < MIN_STAFF_PER_STATION,
@@ -447,7 +380,9 @@ export default function ManagerSchedulesPage() {
 
   function openAssignmentModal({ assignment = null, stationId = null, employeeId = null, stationRole = 'cook' } = {}) {
     const defaultStationId = stationId ?? assignment?.branch_id ?? stations[0]?.id ?? null
+    const hasPickedRoleContext = Boolean(stationId && stationRole && !assignment)
     setEditingAssignment(assignment)
+    setIsAssignmentContextLocked(hasPickedRoleContext)
     setModalOpen(true)
     form.setFieldsValue({
       schedule_date: scheduleDate,
@@ -462,11 +397,6 @@ export default function ManagerSchedulesPage() {
   }
 
   function handlePickRole(stationId, stationRole = 'cook') {
-    if (selectedStaffId && !assignedByEmployeeId.has(selectedStaffId)) {
-      openAssignmentModal({ stationId, employeeId: selectedStaffId, stationRole })
-      return
-    }
-
     openAssignmentModal({ stationId, stationRole })
   }
 
@@ -488,9 +418,9 @@ export default function ManagerSchedulesPage() {
         editingAssignment?.id,
       )
       message.success(editingAssignment ? 'Schedule assignment updated.' : 'Schedule assignment added.')
-      setSelectedStaffId(null)
       setModalOpen(false)
       setEditingAssignment(null)
+      setIsAssignmentContextLocked(false)
       form.resetFields()
       loadData(scheduleDate)
     } catch (error) {
@@ -511,7 +441,7 @@ export default function ManagerSchedulesPage() {
   }
 
   return (
-    <>
+    <div className="manager-schedules-page">
       <PageHeader
         eyebrow="Manager"
         title="Schedules"
@@ -521,17 +451,67 @@ export default function ManagerSchedulesPage() {
             <Button icon={<ReloadOutlined />} onClick={() => loadData(scheduleDate)} loading={loading}>
               Refresh
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openAssignmentModal()}
-              disabled={!stations.length}
-            >
-              Add assignment
-            </Button>
           </Space>
         }
       />
+
+      <Card className="schedule-mobile-control-card">
+        <div className="schedule-mobile-date-row">
+          <Button
+            type="text"
+            icon={<LeftOutlined />}
+            aria-label="Previous day"
+            onClick={() => setScheduleDate(addDays(scheduleDate, -1))}
+          />
+          <Input
+            type="date"
+            aria-label="Schedule date"
+            value={scheduleDate}
+            onChange={(event) => setScheduleDate(event.target.value || getTodayInputDate())}
+          />
+          <Button
+            type="text"
+            icon={<RightOutlined />}
+            aria-label="Next day"
+            onClick={() => setScheduleDate(addDays(scheduleDate, 1))}
+          />
+          <Button
+            type="text"
+            icon={<ReloadOutlined />}
+            aria-label="Refresh schedule"
+            onClick={() => loadData(scheduleDate)}
+            loading={loading}
+          />
+        </div>
+        <div className="schedule-mobile-day-head">
+          <Text strong>{getCompactDateTitle(scheduleDate)}</Text>
+          <Button
+            size="small"
+            icon={<CalendarOutlined />}
+            onClick={() => setMobileCalendarOpen((isOpen) => !isOpen)}
+          >
+            {mobileCalendarOpen ? 'Hide month' : 'Month'}
+          </Button>
+        </div>
+        <div className="schedule-mobile-stat-row">
+          <div>
+            <Text type="secondary">Assigned</Text>
+            <strong>{assignments.length}</strong>
+          </div>
+          <div>
+            <Text type="secondary">Ready</Text>
+            <strong>{selectedDayReadiness.ready}</strong>
+          </div>
+          <div className={selectedDayReadiness.needsStaff ? 'is-warning' : ''}>
+            <Text type="secondary">Needs</Text>
+            <strong>{selectedDayReadiness.needsStaff}</strong>
+          </div>
+          <div>
+            <Text type="secondary">Empty</Text>
+            <strong>{selectedDayReadiness.empty}</strong>
+          </div>
+        </div>
+      </Card>
 
       <Card className="schedule-toolbar-card">
         <Space wrap className="schedule-toolbar">
@@ -564,7 +544,7 @@ export default function ManagerSchedulesPage() {
 
       <div className="schedule-planner-layout" aria-busy={loading}>
         <Card
-          className="schedule-calendar-card"
+          className={`schedule-calendar-card ${mobileCalendarOpen ? '' : 'is-mobile-collapsed'}`}
           title={<span className="staff-card-title"><CalendarOutlined /> {getMonthTitle(scheduleDate)}</span>}
           extra={
             <Space size={4}>
@@ -641,46 +621,79 @@ export default function ManagerSchedulesPage() {
           </div>
         </Card>
 
+        {(!stations.length || !staff.length) && (
+          <Alert
+            className="schedule-readiness-alert"
+            type="warning"
+            showIcon
+            title={!stations.length ? 'Add an active station before scheduling' : 'Add active staff before scheduling'}
+            description={
+              !stations.length
+                ? 'Schedules need at least one active station so staff can be assigned to a real work area.'
+                : 'Only active staff appear in assignment choices, which keeps the schedule clean and prevents accidental assignments.'
+            }
+          />
+        )}
+
         <AssignmentCommandCenter
-          assignedByEmployeeId={assignedByEmployeeId}
-          availableStaffCount={availableStaffCount}
-          selectedStaff={selectedStaff}
-          selectedStaffAssignment={selectedStaffAssignment}
-          selectedStaffStation={stationById.get(selectedStaffAssignment?.branch_id)}
-          selectedStaffId={selectedStaffId}
           stationGroups={stationGroups}
-          staff={staff}
-          onClearSelectedStaff={() => setSelectedStaffId(null)}
           onDeleteAssignment={handleDelete}
           onEditAssignment={(selectedAssignment) => openAssignmentModal({ assignment: selectedAssignment })}
           onPickRole={handlePickRole}
-          onSelectStaff={setSelectedStaffId}
         />
       </div>
 
       <Modal
+        className="schedule-assignment-modal"
         title={editingAssignment ? 'Edit station assignment' : 'Add station assignment'}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false)
+          setIsAssignmentContextLocked(false)
+        }}
         onOk={handleSave}
         confirmLoading={saving}
         okText={editingAssignment ? 'Save changes' : 'Add assignment'}
       >
         <Form form={form} layout="vertical" requiredMark={false}>
-          <Form.Item name="branch_id" label="Station" rules={[{ required: true, message: 'Choose a station.' }]}>
-            <Select
-              options={stations.map((station) => ({
-                value: station.id,
-                label: getStationLabel(station),
-              }))}
-            />
-          </Form.Item>
+          {isAssignmentContextLocked && (
+            <div className="schedule-assignment-context">
+              <div>
+                <Text type="secondary">Station</Text>
+                <Text strong>{getStationLabel(stationById.get(selectedStationId))}</Text>
+              </div>
+              <div>
+                <Text type="secondary">Role</Text>
+                <Text strong>{getStationRoleLabel(selectedRole)}</Text>
+              </div>
+            </div>
+          )}
+          {isAssignmentContextLocked ? (
+            <Form.Item name="branch_id" hidden rules={[{ required: true, message: 'Choose a station.' }]}>
+              <Input />
+            </Form.Item>
+          ) : (
+            <Form.Item name="branch_id" label="Station" rules={[{ required: true, message: 'Choose a station.' }]}>
+              <Select
+                options={stations.map((station) => ({
+                  value: station.id,
+                  label: getStationLabel(station),
+                }))}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="employee_id" label="Staff" rules={[{ required: true, message: 'Choose a staff member.' }]}>
             <Select showSearch optionFilterProp="label" options={staffOptions} disabled={Boolean(editingAssignment)} />
           </Form.Item>
-          <Form.Item name="station_role" label="Station role" rules={[{ required: true, message: 'Choose a role.' }]}>
-            <Select options={STATION_ROLE_OPTIONS} onChange={() => form.setFieldValue('trainer_employee_id', null)} />
-          </Form.Item>
+          {isAssignmentContextLocked ? (
+            <Form.Item name="station_role" hidden rules={[{ required: true, message: 'Choose a role.' }]}>
+              <Input />
+            </Form.Item>
+          ) : (
+            <Form.Item name="station_role" label="Station role" rules={[{ required: true, message: 'Choose a role.' }]}>
+              <Select options={STATION_ROLE_OPTIONS} onChange={() => form.setFieldValue('trainer_employee_id', null)} />
+            </Form.Item>
+          )}
           <Space className="form-grid-two" align="start">
             <Form.Item
               name="scheduled_start"
@@ -712,6 +725,6 @@ export default function ManagerSchedulesPage() {
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   )
 }

@@ -1,10 +1,14 @@
 import {
   CalendarOutlined,
+  CheckCircleOutlined,
   DownloadOutlined,
+  FieldTimeOutlined,
   ReloadOutlined,
   SearchOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import {
+  Alert,
   App,
   Button,
   Card,
@@ -12,6 +16,7 @@ import {
   DatePicker,
   Input,
   Row,
+  Segmented,
   Select,
   Space,
   Statistic,
@@ -388,15 +393,30 @@ export default function ManagerReportsPage() {
       />
 
       <Card>
-        <Space wrap className="table-toolbar">
-          <Select
-            aria-label="Report type"
-            options={reportTypes}
-            value={filters.reportType}
-            onChange={(value) => applyFilters({ reportType: value })}
-            style={{ minWidth: 190 }}
-          />
+        <div className="manager-control-panel">
+          <div>
+            <Text className="attendance-kicker">Report view</Text>
+            <Segmented
+              value={filters.reportType}
+              onChange={(value) => applyFilters({ reportType: value })}
+              options={reportTypes}
+            />
+          </div>
+          <Space wrap className="manager-filter-note">
+            <Tag color="blue">{getReportTitle(filters.reportType)}</Tag>
+            <Text type="secondary">{count} rows available</Text>
+          </Space>
+        </div>
 
+        <Alert
+          className="manager-page-alert"
+          type="info"
+          showIcon
+          title="Exports use the current report view and filters"
+          description="Set the date range, station, employee, and search first, then export the exact CSV the manager needs."
+        />
+
+        <Space wrap className="table-toolbar">
           {filters.reportType === 'daily' && (
             <DatePicker
               allowClear={false}
@@ -473,22 +493,22 @@ export default function ManagerReportsPage() {
 
         <Row gutter={[16, 16]} className="summary-grid">
           <Col xs={12} md={6}>
-            <Card size="small">
-              <Statistic title={`${getReportTitle(filters.reportType)} records`} value={summary.total} />
+            <Card size="small" className="manager-summary-card">
+              <Statistic title={`${getReportTitle(filters.reportType)} records`} value={summary.total} prefix={<FieldTimeOutlined />} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small">
-              <Statistic title="Completed on page" value={summary.completed} />
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Completed on page" value={summary.completed} prefix={<CheckCircleOutlined />} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small">
-              <Statistic title="Late records on page" value={summary.late} />
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Late records on page" value={summary.late} prefix={<WarningOutlined />} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small">
+            <Card size="small" className="manager-summary-card">
               <Statistic title="Missing clock-outs on page" value={summary.missingClockOut} />
             </Card>
           </Col>

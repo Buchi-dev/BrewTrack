@@ -5,10 +5,11 @@ import {
   ExclamationCircleOutlined,
   FileSearchOutlined,
   PlusOutlined,
+  RightOutlined,
   TeamOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
-import { Alert, App, Button, Card, Col, Empty, Flex, Grid, List, Progress, Row, Space, Table, Tag, Typography } from 'antd'
+import { Alert, App, Avatar, Button, Card, Col, Empty, Flex, Grid, Progress, Row, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -59,6 +60,50 @@ function MetricCard({ title, value, helper, icon, tone = 'neutral' }) {
         </div>
       </Flex>
     </Card>
+  )
+}
+
+function getInitials(profile) {
+  const first = profile?.first_name?.trim()?.[0]
+  const last = profile?.last_name?.trim()?.[0]
+  const fallback = getFullName(profile)
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+
+  return `${first || ''}${last || ''}`.trim().toUpperCase() || fallback.toUpperCase() || 'ST'
+}
+
+function formatAttendanceTime(value) {
+  if (!value) return '--'
+  return formatDateTime(value, { dateStyle: undefined })
+}
+
+function MobileAttendanceRow({ record, onOpen }) {
+  const name = getFullName(record.profiles)
+  const station = record.branches?.name || 'No station'
+  const clockIn = formatAttendanceTime(record.clock_in_at)
+  const clockOut = record.clock_out_at ? formatAttendanceTime(record.clock_out_at) : 'Now'
+
+  return (
+    <button type="button" className="mobile-attendance-row" onClick={onOpen}>
+      <Avatar className="mobile-attendance-avatar">{getInitials(record.profiles)}</Avatar>
+      <span className="mobile-attendance-copy">
+        <span className="mobile-attendance-row-top">
+          <strong>{name}</strong>
+          <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>
+        </span>
+        <span className="mobile-attendance-station">{station}</span>
+        <span className="mobile-attendance-time">
+          {clockIn}
+          {' -> '}
+          {clockOut}
+        </span>
+      </span>
+      <RightOutlined className="mobile-attendance-chevron" aria-hidden="true" />
+    </button>
   )
 }
 
@@ -191,9 +236,10 @@ export default function ManagerDashboardPage() {
     return Math.round((summary.presentToday / summary.totalEmployees) * 100)
   }, [summary.presentToday, summary.totalEmployees])
   const isPhoneLayout = !screens.md
+  const needsAttention = summary.notYetClockedIn > 0 || summary.missingClockOut > 0 || summary.lateToday > 0
 
   return (
-    <>
+    <div className="manager-dashboard-page">
       <PageHeader
         eyebrow="Manager"
         title="Today at a glance"
@@ -210,45 +256,53 @@ export default function ManagerDashboardPage() {
         }
       />
 
-      <Row gutter={[16, 16]} className="dashboard-metrics">
-        <Col xs={24} md={12} xl={6}>
+      <section className="manager-mobile-overview" aria-label="Today overview">
+        <Text className="eyebrow">Today</Text>
+        <Title level={1}>Good morning, Manager</Title>
+        <Text type="secondary">
+          {summary.presentToday} of {summary.totalEmployees} present · {summary.notYetClockedIn} pending
+        </Text>
+      </section>
+
+      <Row gutter={isPhoneLayout ? [10, 10] : [16, 16]} className="dashboard-metrics">
+        <Col xs={12} md={12} xl={6}>
           <MetricCard
-            title="Total employees"
-            value={summary.totalEmployees}
-            helper="Active staff accounts"
-            icon={<TeamOutlined />}
-          />
-        </Col>
-        <Col xs={24} md={12} xl={6}>
-          <MetricCard
-            title="Present today"
+            title="Present"
             value={summary.presentToday}
-            helper={`${completionPercent}% checked in`}
+            helper={`${completionPercent}% today`}
             icon={<UserAddOutlined />}
             tone="success"
           />
         </Col>
-        <Col xs={24} md={12} xl={6}>
+        <Col xs={12} md={12} xl={6}>
           <MetricCard
-            title="Late today"
+            title="Late"
             value={summary.lateToday}
-            helper="Past scheduled start"
+            helper="Today"
             icon={<ClockCircleOutlined />}
             tone={summary.lateToday > 0 ? 'warning' : 'neutral'}
           />
         </Col>
-        <Col xs={24} md={12} xl={6}>
+        <Col xs={12} md={12} xl={6}>
           <MetricCard
-            title="Missing clock-out"
+            title="Employees"
+            value={summary.totalEmployees}
+            helper="Active"
+            icon={<TeamOutlined />}
+          />
+        </Col>
+        <Col xs={12} md={12} xl={6}>
+          <MetricCard
+            title="Missing"
             value={summary.missingClockOut}
-            helper="Needs end-of-day review"
+            helper="Clock-out"
             icon={<ExclamationCircleOutlined />}
             tone={summary.missingClockOut > 0 ? 'danger' : 'neutral'}
           />
         </Col>
       </Row>
 
-      {(summary.notYetClockedIn > 0 || summary.missingClockOut > 0 || summary.lateToday > 0) && (
+      {needsAttention ? (
         <Alert
           className="manager-page-alert dashboard-triage-alert"
           type="warning"
@@ -261,6 +315,14 @@ export default function ManagerDashboardPage() {
             </Button>
           }
         />
+      ) : (
+        <Alert
+          className="manager-page-alert dashboard-triage-alert dashboard-clear-alert"
+          type="success"
+          showIcon
+          title="Everything looks good"
+          description="No issues today."
+        />
       )}
 
       <Row gutter={[16, 16]} className="section-card">
@@ -268,32 +330,29 @@ export default function ManagerDashboardPage() {
           <Card
             className="dashboard-table-card"
             title={
-              <Flex align="center" justify="space-between" gap={12} wrap>
-                <span>Today&apos;s attendance</span>
-                <Tag color={summary.notYetClockedIn > 0 ? 'gold' : 'green'}>
-                  {summary.notYetClockedIn} not yet clocked in
-                </Tag>
+              <Flex align="flex-start" justify="space-between" gap={12}>
+                <span className="dashboard-card-title">
+                  <span>Today&apos;s attendance</span>
+                  <Text type="secondary">{summary.presentToday} present · {summary.notYetClockedIn} pending</Text>
+                </span>
+                <Button type="link" size="small" onClick={() => navigate(ROUTES.managerAttendance)}>
+                  View all
+                </Button>
               </Flex>
             }
           >
             {isPhoneLayout ? (
               <div className="mobile-attendance-panel" aria-busy={loading}>
                 {records.length ? (
-                  <List
-                    loading={loading}
-                    dataSource={records}
-                    renderItem={(record) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          title={getFullName(record.profiles)}
-                          description={`${record.branches?.name || 'No station'} • ${formatDateTime(record.clock_in_at, {
-                            dateStyle: undefined,
-                          })}`}
-                        />
-                        <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>
-                      </List.Item>
-                    )}
-                  />
+                  <div className="mobile-attendance-list">
+                    {records.map((record) => (
+                      <MobileAttendanceRow
+                        key={record.id}
+                        record={record}
+                        onOpen={() => navigate(ROUTES.managerAttendance)}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <AttendanceEmptyState
                     onAddEmployee={() => navigate(ROUTES.managerEmployees)}
@@ -350,6 +409,6 @@ export default function ManagerDashboardPage() {
           />
         </Col>
       </Row>
-    </>
+    </div>
   )
 }

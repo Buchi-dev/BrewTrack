@@ -9,8 +9,6 @@ import {
   FileTextOutlined,
   LogoutOutlined,
   MoreOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   SettingOutlined,
   TeamOutlined,
   UserOutlined,
@@ -57,17 +55,15 @@ function TodayClock() {
   }, [])
 
   const date = new Intl.DateTimeFormat('en-PH', {
-    weekday: 'long',
-    month: 'long',
+    weekday: 'short',
+    month: 'short',
     day: 'numeric',
-    year: 'numeric',
     timeZone: DEFAULT_TIMEZONE,
   }).format(now)
 
   const time = new Intl.DateTimeFormat('en-PH', {
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit',
     timeZone: DEFAULT_TIMEZONE,
   }).format(now)
 
@@ -81,6 +77,13 @@ function TodayClock() {
     </div>
   )
 }
+
+const managerMobileItems = [
+  managerItems[0],
+  managerItems[1],
+  { ...managerItems[3], label: 'Staff' },
+  { key: ROUTES.managerSettings, icon: <UserOutlined />, label: 'Account' },
+]
 
 function NavAccount({ profile, onSignOut }) {
   return (
@@ -151,6 +154,79 @@ function StaffMobileHeader({ selectedKeys, onNavigate, profile, onSignOut }) {
   )
 }
 
+function ManagerMobileHeader({ selectedKeys, onNavigate, profile, onSignOut }) {
+  const activeItem =
+    managerMobileItems.find((item) => selectedKeys.includes(item.key)) ??
+    managerItems.find((item) => selectedKeys.includes(item.key)) ??
+    managerItems[0]
+  const overflowItems = managerItems
+    .filter((item) => !managerMobileItems.some((mobileItem) => mobileItem.key === item.key))
+    .map((item) => ({
+      key: item.key,
+      icon: item.icon,
+      label: item.label,
+      onClick: () => onNavigate(item.key),
+    }))
+
+  return (
+    <>
+      <div className="manager-mobile-header">
+        <div className="manager-mobile-title">
+          <Text className="eyebrow">Manager</Text>
+          <div className="topbar-title">{activeItem.label === 'Dashboard' ? 'Attendance' : activeItem.label}</div>
+        </div>
+        <div className="manager-mobile-actions">
+          <TodayClock />
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                ...overflowItems,
+                { type: 'divider' },
+                {
+                  key: 'profile',
+                  icon: <UserOutlined />,
+                  label: getDisplayName(profile),
+                  onClick: () => onNavigate(ROUTES.managerSettings),
+                },
+                {
+                  key: 'sign-out',
+                  icon: <LogoutOutlined />,
+                  label: 'Sign out',
+                  onClick: onSignOut,
+                },
+              ],
+            }}
+          >
+            <Button type="text" icon={<MoreOutlined />} aria-label="Open account menu" />
+          </Dropdown>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function ManagerBottomNav({ selectedKeys, onNavigate }) {
+  return (
+    <nav className="manager-bottom-nav" aria-label="Manager navigation">
+      {managerMobileItems.map((item) => {
+        const isActive = selectedKeys.includes(item.key)
+        return (
+          <button
+            key={item.key}
+            type="button"
+            className={isActive ? 'is-active' : ''}
+            onClick={() => onNavigate(item.key)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function AppLayout({ section }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { pathname } = useLocation()
@@ -160,7 +236,9 @@ export default function AppLayout({ section }) {
   const [api, contextHolder] = message.useMessage()
   const items = section === 'manager' ? managerItems : staffItems
   const isStaffSection = section === 'staff'
+  const isManagerSection = section === 'manager'
   const showStaffMobileHeader = isStaffSection && !screens.md
+  const showManagerMobileHeader = isManagerSection && !screens.md
   const selectedKeys = useMemo(() => {
     const active = items.find((item) => pathname === item.key) ?? items[0]
     return [active.key]
@@ -194,7 +272,7 @@ export default function AppLayout({ section }) {
   }
 
   return (
-    <Layout className="app-layout">
+    <Layout className={`app-layout app-layout-${section}`}>
       {contextHolder}
       {screens.md ? (
         <Sider width={244} className="app-sider">
@@ -209,7 +287,7 @@ export default function AppLayout({ section }) {
             <NavAccount profile={profile} onSignOut={handleSignOut} />
           </div>
         </Sider>
-      ) : !isStaffSection ? (
+      ) : !isStaffSection && !showManagerMobileHeader ? (
         <Drawer
           open={drawerOpen}
           placement="left"
@@ -227,9 +305,20 @@ export default function AppLayout({ section }) {
       ) : null}
 
       <Layout>
-        <Header className={`topbar ${showStaffMobileHeader ? 'staff-mobile-topbar' : ''}`}>
+        <Header
+          className={`topbar ${showStaffMobileHeader ? 'staff-mobile-topbar' : ''} ${
+            showManagerMobileHeader ? 'manager-mobile-topbar' : ''
+          }`}
+        >
           {showStaffMobileHeader ? (
             <StaffMobileHeader
+              selectedKeys={selectedKeys}
+              onNavigate={handleNavigate}
+              profile={profile}
+              onSignOut={handleSignOut}
+            />
+          ) : showManagerMobileHeader ? (
+            <ManagerMobileHeader
               selectedKeys={selectedKeys}
               onNavigate={handleNavigate}
               profile={profile}
@@ -238,14 +327,6 @@ export default function AppLayout({ section }) {
           ) : (
             <>
               <Space align="center">
-                {!screens.md && (
-                  <Button
-                    type="text"
-                    icon={drawerOpen ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                    onClick={() => setDrawerOpen(true)}
-                    aria-label="Open navigation"
-                  />
-                )}
                 <div>
                   <Text className="eyebrow">{section}</Text>
                   <div className="topbar-title">Attendance workspace</div>
@@ -260,6 +341,7 @@ export default function AppLayout({ section }) {
         <Content className="app-content">
           <Outlet />
         </Content>
+        {showManagerMobileHeader && <ManagerBottomNav selectedKeys={selectedKeys} onNavigate={handleNavigate} />}
       </Layout>
     </Layout>
   )

@@ -1228,7 +1228,6 @@ a {
 }
 
 .schedule-toolbar-card,
-.station-schedule-card,
 .staff-station-card {
   border: 1px solid var(--brand-line);
 }
@@ -1279,8 +1278,7 @@ a {
 }
 
 .schedule-calendar-card,
-.schedule-day-brief-card,
-.schedule-staff-rail {
+.schedule-day-brief-card {
   border: 1px solid var(--brand-line);
 }
 
@@ -1406,157 +1404,250 @@ a {
   background: #fff7e6;
 }
 
-.schedule-workbench {
-  display: grid;
+.schedule-command-card {
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-  gap: 16px;
-  align-items: start;
+  border: 1px solid var(--brand-line);
+  background: #fffdf9;
 }
 
-.schedule-day-board {
+.schedule-command-card .ant-card-body {
   display: grid;
-  gap: 16px;
+  gap: 14px;
+  padding: 18px;
 }
 
-.station-schedule-grid {
+.schedule-command-head {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 12px;
+  align-items: stretch;
 }
 
-.station-schedule-card .ant-card-head {
-  min-height: 54px;
+.schedule-command-head h2.ant-typography {
+  margin: 4px 0 0;
+  font-size: 24px;
+  line-height: 1.12;
 }
 
-.station-schedule-card .ant-card-body {
-  min-height: 180px;
+.schedule-selected-staff {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 3px 8px;
+  padding: 10px;
+  border: 1px solid #e4b270;
+  border-radius: 8px;
+  background: #fff1dc;
 }
 
-.station-schedule-dropzone {
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+.schedule-selected-staff > .ant-typography-secondary {
+  grid-column: 1 / -1;
+  font-size: 11px;
 }
 
-.station-schedule-dropzone.is-ready {
-  border-color: #b7eb8f;
+.schedule-selected-staff strong.ant-typography {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.station-schedule-dropzone.is-needs-attention {
-  border-color: #ffd591;
+.schedule-selected-staff .ant-btn {
+  grid-row: 2;
 }
 
-.station-schedule-dropzone.is-conflict {
-  border-color: #ffccc7;
+.schedule-selected-staff.is-empty {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  border-color: var(--brand-line);
+  background: #fff8ef;
 }
 
-.station-role-strip {
+.schedule-selected-staff.is-empty .anticon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff0dc;
+  color: var(--brand-amber-dark);
+}
+
+.schedule-command-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  background: #fff7e6;
+}
+
+.schedule-command-warning .anticon {
+  color: #ad6800;
+}
+
+.schedule-command-roster {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-command-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.schedule-command-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.schedule-command-matrix {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-command-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.schedule-command-station {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fff8ef;
+}
+
+.schedule-command-slots {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
 }
 
-.station-role-slot {
+.schedule-command-slot {
   display: grid;
-  min-height: 56px;
-  align-content: center;
-  gap: 3px;
-  padding: 8px;
+  min-height: 66px;
+  align-content: start;
+  gap: 6px;
+  padding: 7px;
   border: 1px dashed #d6c1aa;
   border-radius: 8px;
-  background: #fffaf3;
+  background: #fffdf9;
+  color: var(--text-main);
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.schedule-command-slot:hover {
+  border-color: var(--brand-amber-dark);
+  background: #fff3df;
+  box-shadow: 0 6px 14px rgba(43, 27, 18, 0.07);
+}
+
+.schedule-command-slot.has-assignment {
+  border-style: solid;
+  border-color: #b7eb8f;
+  background: #f6ffed;
+}
+
+.schedule-command-slot-action {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-command-slot-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.schedule-command-slot-action span {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-command-slot-action small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.schedule-command-assignment {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 5px 6px;
+  border: 1px solid rgba(82, 196, 26, 0.24);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.schedule-command-assignment-name {
+  display: grid;
+  min-width: 0;
+}
+
+.schedule-command-assignment-name strong.ant-typography {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-command-assignment .ant-space {
+  flex: 0 0 auto;
+  gap: 0 !important;
+}
+
+.schedule-command-assignment .ant-btn {
+  width: 25px;
+  min-width: 25px;
+  height: 25px;
+}
+
+.schedule-staff-card {
+  display: block;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffdf9;
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
 }
 
-.station-role-slot:hover {
-  border-color: var(--brand-amber-dark);
-  background: #fff3df;
-}
-
-.station-role-slot:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.station-role-slot span {
-  font-weight: 700;
+.schedule-staff-card strong.ant-typography {
+  display: block;
+  overflow: hidden;
   font-size: 13px;
-}
-
-.station-role-slot small {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.schedule-assignment-list {
-  display: grid;
-  gap: 10px;
-}
-
-.schedule-assignment {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--brand-line);
-  border-radius: 8px;
-  background: #fffdf9;
-}
-
-.schedule-assignment-main {
-  display: grid;
-  min-width: 0;
-  gap: 5px;
-}
-
-.schedule-assignment-meta {
-  font-size: 12px;
-}
-
-.schedule-staff-rail-note {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 8px;
-  align-items: start;
-  margin-bottom: 12px;
-  padding: 10px;
-  border: 1px solid var(--brand-line);
-  border-radius: 8px;
-  background: #fffaf3;
-}
-
-.schedule-staff-rail-note .anticon {
-  margin-top: 3px;
-  color: var(--brand-amber-dark);
-}
-
-.schedule-staff-list {
-  display: grid;
-  gap: 8px;
-}
-
-.schedule-staff-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--brand-line);
-  border-radius: 8px;
-  background: #fffdf9;
-  color: var(--text-main);
-  text-align: left;
-  cursor: grab;
-}
-
-.schedule-staff-card > span {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedule-staff-card:hover {
@@ -1564,10 +1655,10 @@ a {
   background: #fff8ed;
 }
 
-.schedule-staff-card.is-assigned {
-  cursor: not-allowed;
-  background: #f7f7f7;
-  opacity: 0.78;
+.schedule-staff-card.is-selected {
+  border-color: var(--brand-amber-dark);
+  background: #fff1dc;
+  box-shadow: inset 0 0 0 1px var(--brand-amber-dark);
 }
 
 .staff-station-panel {
@@ -2311,8 +2402,30 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .schedule-workbench {
+  .schedule-command-card .ant-card-body {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .schedule-command-head,
+  .schedule-command-row {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-command-head h2.ant-typography {
+    font-size: 22px;
+  }
+
+  .schedule-command-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schedule-command-staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-command-slot {
+    min-height: 58px;
   }
 
   .schedule-calendar-card .schedule-calendar-grid {
@@ -2359,14 +2472,6 @@ a {
 
   .schedule-day-brief-grid strong {
     font-size: 24px;
-  }
-
-  .station-role-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .station-schedule-grid {
-    grid-template-columns: 1fr;
   }
 
   .attendance-camera-stage,

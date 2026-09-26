@@ -1,7 +1,6 @@
 import {
   CalendarOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
@@ -32,7 +31,6 @@ import { listAllBranches } from '../../services/manager/branchService.js'
 import { listActiveStaff, getFullName } from '../../services/manager/employeeService.js'
 import {
   deleteStationScheduleAssignment,
-  formatScheduleTimeRange,
   getScheduleStaffName,
   getStationLabel,
   getStationRoleLabel,
@@ -130,27 +128,11 @@ function getCompactDateTitle(date) {
   }).format(parseInputDate(date))
 }
 
-function StaffAssignment({ assignment, onEdit, onDelete }) {
+function CommandAssignmentChip({ assignment, onEdit, onDelete }) {
   return (
-    <div className="schedule-assignment">
-      <div className="schedule-assignment-main">
+    <div className="schedule-command-assignment">
+      <div className="schedule-command-assignment-name">
         <Text strong>{getScheduleStaffName(assignment.profiles)}</Text>
-        {assignment.profiles?.employee_number && (
-          <Text type="secondary" className="schedule-assignment-meta">
-            {assignment.profiles.employee_number}
-          </Text>
-        )}
-        <Space wrap size={[6, 6]}>
-          <Tag color={assignment.station_role === 'trainee' ? 'gold' : 'blue'}>
-            {getStationRoleLabel(assignment.station_role)}
-          </Tag>
-          <Tag color="purple">
-            {formatScheduleTimeRange(assignment.scheduled_start, assignment.scheduled_end)}
-          </Tag>
-          {assignment.trainer && (
-            <Tag color="green">Trainer: {getScheduleStaffName(assignment.trainer)}</Tag>
-          )}
-        </Space>
       </div>
       <Space size={4}>
         <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(assignment)} aria-label="Edit assignment" />
@@ -167,64 +149,53 @@ function StaffAssignment({ assignment, onEdit, onDelete }) {
   )
 }
 
-function StaffCard({ employee, assignedAssignment, isSelected, stationById, onSelect }) {
-  const assignedStation = assignedAssignment ? stationById.get(assignedAssignment.branch_id) : null
-  const isAssigned = Boolean(assignedAssignment)
-
+function StaffCard({ employee, isSelected, onSelect }) {
   return (
     <button
       type="button"
-      className={`schedule-staff-card ${isAssigned ? 'is-assigned' : ''} ${isSelected ? 'is-selected' : ''}`}
-      draggable={!isAssigned}
-      onDragStart={(event) => {
-        event.dataTransfer.setData('text/plain', employee.id)
-        event.dataTransfer.effectAllowed = 'copy'
-      }}
-      onClick={() => !isAssigned && onSelect(employee.id)}
-      disabled={isAssigned}
+      className={`schedule-staff-card ${isSelected ? 'is-selected' : ''}`}
+      onClick={() => onSelect(employee.id)}
     >
-      <span>
-        <Text strong>{getFullName(employee)}</Text>
-        {employee.employee_number && <Text type="secondary">{employee.employee_number}</Text>}
-      </span>
-      {isAssigned ? (
-        <Tag color="green">{getStationLabel(assignedStation)}</Tag>
-      ) : (
-        <Tag color="blue">Available</Tag>
-      )}
+      <Text strong title={getFullName(employee)}>{getFullName(employee)}</Text>
     </button>
   )
 }
 
 function AssignmentCommandCenter({
+  assignedByEmployeeId,
+  availableStaffCount,
   selectedStaff,
   selectedStaffAssignment,
+  selectedStaffStation,
+  selectedStaffId,
   stationGroups,
+  staff,
   onClearSelectedStaff,
+  onDeleteAssignment,
+  onEditAssignment,
   onPickRole,
+  onSelectStaff,
 }) {
+  const availableStaff = staff.filter((employee) => !assignedByEmployeeId.has(employee.id))
+
   return (
     <Card className="schedule-command-card">
       <div className="schedule-command-head">
         <div>
           <Text className="attendance-kicker">Assign command center</Text>
-          <Typography.Title level={2}>Pick staff, then pick a station role.</Typography.Title>
-          <Text type="secondary">
-            Use this matrix to assign without scrolling through every station card.
-          </Text>
+          <Typography.Title level={2}>Pick staff, then role.</Typography.Title>
         </div>
         {selectedStaff ? (
           <div className="schedule-selected-staff">
             <Text type="secondary">Selected staff</Text>
             <Text strong>{getFullName(selectedStaff)}</Text>
-            {selectedStaff.employee_number && <Text type="secondary">{selectedStaff.employee_number}</Text>}
             <Button size="small" onClick={onClearSelectedStaff}>Clear</Button>
           </div>
         ) : (
           <div className="schedule-selected-staff is-empty">
             <UserAddOutlined />
-            <Text strong>Select an available staff card</Text>
-            <Text type="secondary">Then click any open station role below.</Text>
+            <Text strong>Select staff</Text>
+            <Text type="secondary">Then choose a role.</Text>
           </div>
         )}
       </div>
@@ -233,12 +204,39 @@ function AssignmentCommandCenter({
         <div className="schedule-command-warning">
           <ExclamationCircleOutlined />
           <Text>
-            {getFullName(selectedStaff)} is already assigned to {getStationLabel(selectedStaffAssignment)}.
+            {getFullName(selectedStaff)} is already assigned to {getStationLabel(selectedStaffStation)}.
           </Text>
         </div>
       )}
 
+      <div className="schedule-command-roster">
+        <div className="schedule-command-section-head">
+          <Text strong>Available staff</Text>
+          <Tag color="blue">{availableStaffCount} available</Tag>
+        </div>
+        <div className="schedule-command-staff-grid">
+          {availableStaff.length ? (
+            availableStaff.map((employee) => (
+              <StaffCard
+                key={employee.id}
+                employee={employee}
+                isSelected={selectedStaffId === employee.id}
+                onSelect={onSelectStaff}
+              />
+            ))
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={staff.length ? 'All staff assigned' : 'No active staff'}
+            />
+          )}
+        </div>
+      </div>
+
       <div className="schedule-command-matrix">
+        <div className="schedule-command-section-head">
+          <Text strong>Station role targets</Text>
+        </div>
         {stationGroups.map(({ station, assignments: stationAssignments }) => {
           const stationIsFull = stationAssignments.length >= MAX_STAFF_PER_STATION
           const tone = getStaffingTone(stationAssignments.length)
@@ -254,20 +252,32 @@ function AssignmentCommandCenter({
               </div>
               <div className="schedule-command-slots">
                 {STATION_ROLE_OPTIONS.map((role) => {
-                  const count = stationAssignments.filter(
+                  const roleAssignments = stationAssignments.filter(
                     (assignment) => assignment.station_role === role.value,
-                  ).length
+                  )
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={role.value}
-                      className={`schedule-command-slot ${count ? 'has-assignment' : ''}`}
-                      onClick={() => onPickRole(station.id, role.value)}
-                      disabled={stationIsFull}
+                      className={`schedule-command-slot ${roleAssignments.length ? 'has-assignment' : ''}`}
                     >
-                      <span>{role.label}</span>
-                      <small>{count ? `${count} assigned` : selectedStaff ? 'Assign here' : 'Choose staff'}</small>
-                    </button>
+                      <button
+                        type="button"
+                        className="schedule-command-slot-action"
+                        onClick={() => onPickRole(station.id, role.value)}
+                        disabled={stationIsFull}
+                      >
+                        <span>{role.label}</span>
+                        {!roleAssignments.length && <small>{selectedStaff ? 'Assign here' : 'Open'}</small>}
+                      </button>
+                      {roleAssignments.map((assignment) => (
+                        <CommandAssignmentChip
+                          key={assignment.id}
+                          assignment={assignment}
+                          onEdit={onEditAssignment}
+                          onDelete={onDeleteAssignment}
+                        />
+                      ))}
+                    </div>
                   )
                 })}
               </div>
@@ -451,13 +461,6 @@ export default function ManagerSchedulesPage() {
     })
   }
 
-  function handleDrop(event, stationId, stationRole = 'cook') {
-    event.preventDefault()
-    const employeeId = event.dataTransfer.getData('text/plain')
-    if (!employeeId || assignedByEmployeeId.has(employeeId)) return
-    openAssignmentModal({ stationId, employeeId, stationRole })
-  }
-
   function handlePickRole(stationId, stationRole = 'cook') {
     if (selectedStaffId && !assignedByEmployeeId.has(selectedStaffId)) {
       openAssignmentModal({ stationId, employeeId: selectedStaffId, stationRole })
@@ -639,115 +642,20 @@ export default function ManagerSchedulesPage() {
         </Card>
 
         <AssignmentCommandCenter
+          assignedByEmployeeId={assignedByEmployeeId}
+          availableStaffCount={availableStaffCount}
           selectedStaff={selectedStaff}
           selectedStaffAssignment={selectedStaffAssignment}
+          selectedStaffStation={stationById.get(selectedStaffAssignment?.branch_id)}
+          selectedStaffId={selectedStaffId}
           stationGroups={stationGroups}
+          staff={staff}
           onClearSelectedStaff={() => setSelectedStaffId(null)}
+          onDeleteAssignment={handleDelete}
+          onEditAssignment={(selectedAssignment) => openAssignmentModal({ assignment: selectedAssignment })}
           onPickRole={handlePickRole}
+          onSelectStaff={setSelectedStaffId}
         />
-
-        <div className="schedule-workbench">
-        <div className="schedule-day-board">
-          {stations.length ? (
-            stationGroups.map(({ station, assignments: stationAssignments }) => {
-              const tone = getStaffingTone(stationAssignments.length)
-              return (
-                <Card
-                  key={station.id}
-                  className={`station-schedule-card station-schedule-dropzone is-${tone.status}`}
-                  title={
-                    <Space wrap>
-                      <span>{getStationLabel(station)}</span>
-                      <Tag color={tone.color}>{tone.label}</Tag>
-                      <Tag>{stationAssignments.length}/{MAX_STAFF_PER_STATION}</Tag>
-                    </Space>
-                  }
-                  extra={
-                    <Button
-                      size="small"
-                      icon={<PlusOutlined />}
-                      onClick={() => openAssignmentModal({ stationId: station.id })}
-                      disabled={stationAssignments.length >= MAX_STAFF_PER_STATION}
-                    >
-                      Assign
-                    </Button>
-                  }
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => handleDrop(event, station.id)}
-                >
-                  <div className="station-role-strip">
-                    {STATION_ROLE_OPTIONS.map((role) => {
-                      const roleAssignments = stationAssignments.filter(
-                        (assignment) => assignment.station_role === role.value,
-                      )
-                      return (
-                        <button
-                          type="button"
-                          className="station-role-slot"
-                          key={role.value}
-                          onClick={() => handlePickRole(station.id, role.value)}
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={(event) => handleDrop(event, station.id, role.value)}
-                          disabled={stationAssignments.length >= MAX_STAFF_PER_STATION}
-                        >
-                          <span>{role.label}</span>
-                          <small>{roleAssignments.length ? `${roleAssignments.length} assigned` : 'Drop staff'}</small>
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {stationAssignments.length ? (
-                    <div className="schedule-assignment-list">
-                      {stationAssignments.map((assignment) => (
-                        <StaffAssignment
-                          key={assignment.id}
-                          assignment={assignment}
-                          onEdit={(selectedAssignment) => openAssignmentModal({ assignment: selectedAssignment })}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Drop available staff here" />
-                  )}
-                </Card>
-              )
-            })
-          ) : (
-            <Card className="station-schedule-card">
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Create an active station first" />
-            </Card>
-          )}
-        </div>
-
-        <Card
-          className="schedule-staff-rail"
-          title={<span className="staff-card-title"><UserAddOutlined /> Staff</span>}
-          extra={<Tag color="blue">{availableStaffCount} available</Tag>}
-        >
-          <div className="schedule-staff-rail-note">
-            <ClockCircleOutlined />
-            <Text type="secondary">Drag available staff into a station or click a card to assign manually.</Text>
-          </div>
-          <div className="schedule-staff-list">
-            {staff.length ? (
-              staff.map((employee) => (
-                <StaffCard
-                  key={employee.id}
-                  employee={employee}
-                  assignedAssignment={assignedByEmployeeId.get(employee.id)}
-                  isSelected={selectedStaffId === employee.id}
-                  stationById={stationById}
-                  onSelect={setSelectedStaffId}
-                />
-              ))
-            ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No active staff" />
-            )}
-          </div>
-        </Card>
-        </div>
       </div>
 
       <Modal

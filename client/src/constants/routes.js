@@ -3,6 +3,7 @@ export const ROUTES = {
   resetPassword: '/reset-password',
   unauthorized: '/unauthorized',
   staffHome: '/staff',
+  staffSchedule: '/staff/schedule',
   staffHistory: '/staff/history',
   staffProfile: '/staff/profile',
   managerDashboard: '/manager',

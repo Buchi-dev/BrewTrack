@@ -301,7 +301,7 @@ a {
 
 .staff-mobile-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 4px;
   border: 1px solid var(--brand-line);
@@ -657,6 +657,104 @@ a {
 .staff-history-records-card {
   border: 1px solid var(--brand-line);
   background: #fffdf9;
+}
+
+.staff-schedule-toolbar-card,
+.staff-schedule-card,
+.staff-schedule-empty-card {
+  border: 1px solid var(--brand-line);
+  background: #fffdf9;
+}
+
+.staff-schedule-toolbar-card {
+  margin-bottom: 16px;
+}
+
+.staff-schedule-toolbar {
+  display: flex !important;
+  align-items: center;
+  gap: 12px !important;
+}
+
+.staff-schedule-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.staff-schedule-card .ant-card-body {
+  display: grid;
+  gap: 16px;
+}
+
+.staff-schedule-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.staff-schedule-card-head h3.ant-typography {
+  margin: 4px 0 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.staff-schedule-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.staff-schedule-detail-grid > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  padding: 11px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fff8ef;
+}
+
+.staff-schedule-detail-grid .anticon {
+  color: var(--brand-amber-dark);
+  font-size: 17px;
+}
+
+.staff-schedule-detail-grid span,
+.staff-schedule-note {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.staff-schedule-detail-grid strong.ant-typography {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.staff-schedule-note {
+  padding: 10px 12px;
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  background: #fffaf3;
+}
+
+.staff-schedule-team {
+  display: grid;
+  gap: 8px;
+}
+
+.staff-schedule-team-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staff-schedule-team-title .anticon {
+  color: var(--brand-amber-dark);
 }
 
 .staff-history-mobile-list {
@@ -1719,6 +1817,10 @@ a {
     display: none;
   }
 
+  .staff-schedule-page .page-header {
+    display: none;
+  }
+
   .staff-profile-page .page-header {
     display: none;
   }
@@ -1866,6 +1968,44 @@ a {
 
   .staff-history-record-grid {
     gap: 8px;
+  }
+
+  .staff-schedule-toolbar {
+    display: grid !important;
+    width: 100%;
+  }
+
+  .staff-schedule-toolbar .ant-space-item,
+  .staff-schedule-toolbar .ant-radio-group,
+  .staff-schedule-toolbar .schedule-summary-pill {
+    width: 100%;
+  }
+
+  .staff-schedule-toolbar .ant-radio-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-schedule-toolbar .ant-radio-button-wrapper {
+    text-align: center;
+  }
+
+  .staff-schedule-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .staff-schedule-card .ant-card-body {
+    gap: 13px;
+    padding: 16px;
+  }
+
+  .staff-schedule-card-head h3.ant-typography {
+    font-size: 21px;
+  }
+
+  .staff-schedule-detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .staff-history-record-grid > div {

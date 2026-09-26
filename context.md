@@ -153,7 +153,7 @@ BrewTrack/
 Routes are centralized in `client/src/constants/routes.js`.
 
 - Public: `/login`, `/reset-password`, `/unauthorized`.
-- Staff: `/staff`, `/staff/history`, `/staff/profile`.
+- Staff: `/staff`, `/staff/schedule`, `/staff/history`, `/staff/profile`.
 - Manager: `/manager`, `/manager/attendance`, `/manager/schedules`, `/manager/employees`, `/manager/branches`, `/manager/reports`, `/manager/audit`, `/manager/settings`.
 - `/` redirects by role through `RoleRedirect`.
 - Unknown `/staff/*` and `/manager/*` paths redirect to the section home.
@@ -219,6 +219,7 @@ Key RPC/functions:
 - `attach_attendance_selfie(...)`: Validates storage path and attaches clock-in/out evidence.
 - `get_today_attendance()`: Returns the current staff user's attendance for today.
 - `get_today_station_assignment()`: Returns today's station assignment and station team for the current staff user.
+- `get_staff_station_schedule(start_date, end_date)`: Returns the current staff user's station assignments and companions for a week/month range.
 - `get_manager_dashboard_summary()`: Aggregates manager dashboard metrics.
 - `log_manager_action(...)`: Inserts manager audit logs.
 

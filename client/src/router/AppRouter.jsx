@@ -18,6 +18,7 @@ import ManagerSettingsPage from '../features/manager/ManagerSettingsPage.jsx'
 import StaffHistoryPage from '../features/staff/StaffHistoryPage.jsx'
 import StaffHomePage from '../features/staff/StaffHomePage.jsx'
 import StaffProfilePage from '../features/staff/StaffProfilePage.jsx'
+import StaffSchedulePage from '../features/staff/StaffSchedulePage.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
 import RoleRedirect from './RoleRedirect.jsx'
 
@@ -36,6 +37,7 @@ export default function AppRouter() {
         <Route element={<ProtectedRoute allowedRoles={[ROLES.staff]} />}>
           <Route element={<AppLayout section="staff" />}>
             <Route path={ROUTES.staffHome} element={<StaffHomePage />} />
+            <Route path={ROUTES.staffSchedule} element={<StaffSchedulePage />} />
             <Route path={ROUTES.staffHistory} element={<StaffHistoryPage />} />
             <Route path={ROUTES.staffProfile} element={<StaffProfilePage />} />
           </Route>

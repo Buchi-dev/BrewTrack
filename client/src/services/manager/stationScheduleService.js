@@ -133,3 +133,14 @@ export async function getTodayStationAssignment() {
   if (error) throw error
   return data
 }
+
+export async function getStaffStationSchedule(startDate, endDate) {
+  if (!supabase || !startDate || !endDate) return []
+
+  const { data, error } = await supabase.rpc('get_staff_station_schedule', {
+    p_start_date: startDate,
+    p_end_date: endDate,
+  })
+  if (error) throw error
+  return data ?? []
+}

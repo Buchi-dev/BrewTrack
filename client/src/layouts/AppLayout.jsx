@@ -38,6 +38,7 @@ const managerItems = [
 
 const staffItems = [
   { key: ROUTES.staffHome, icon: <DashboardOutlined />, label: 'Today' },
+  { key: ROUTES.staffSchedule, icon: <CalendarOutlined />, label: 'Schedule' },
   { key: ROUTES.staffHistory, icon: <CalendarOutlined />, label: 'History' },
   { key: ROUTES.staffProfile, icon: <UserOutlined />, label: 'Profile' },
 ]

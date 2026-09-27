@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom'
-import { Result, Spin } from 'antd'
+import { Spin } from 'antd'
 import { ROLES } from '../constants/roles.js'
 import { ROUTES } from '../constants/routes.js'
+import AccountInactiveResult from '../features/auth/AccountInactiveResult.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 
 export default function RoleRedirect() {
@@ -20,11 +21,7 @@ export default function RoleRedirect() {
   if (profile.status !== 'active') {
     return (
       <div className="screen-center">
-        <Result
-          status="warning"
-          title="Account not active"
-          subTitle="Please contact a manager before using attendance features."
-        />
+        <AccountInactiveResult />
       </div>
     )
   }

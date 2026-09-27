@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Button, Result, Spin } from 'antd'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../constants/routes.js'
+import AccountInactiveResult from '../features/auth/AccountInactiveResult.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 
 export default function ProtectedRoute({ allowedRoles }) {
@@ -52,11 +53,7 @@ export default function ProtectedRoute({ allowedRoles }) {
   if (profile?.status && profile.status !== 'active') {
     return (
       <div className="screen-center">
-        <Result
-          status="warning"
-          title="Account not active"
-          subTitle="Please contact a manager before using attendance features."
-        />
+        <AccountInactiveResult />
       </div>
     )
   }

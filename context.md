@@ -65,6 +65,7 @@ BrewTrack/
           AttendanceCamera.jsx
           AttendanceFlowModal.jsx
         auth/
+          authMessages.js
           authContext.js
           AuthProvider.jsx
           LoginPage.jsx
@@ -84,6 +85,7 @@ BrewTrack/
           StaffProfilePage.jsx
       hooks/
         useAuth.js
+        useOnlineStatus.js
       layouts/
         AppLayout.jsx
         AuthLayout.jsx
@@ -150,6 +152,7 @@ BrewTrack/
 - `client/src/router/AppRouter.jsx`: Defines public auth routes, staff routes, manager routes, unauthorized page, redirects, and 404 fallback.
 - `client/src/features/auth/AuthProvider.jsx`: Restores the Supabase session, listens for auth changes, loads `profiles`, and exposes auth state.
 - `client/src/features/auth/LoginPage.jsx`: Uses shared Supabase sign-in behavior with a preserved desktop auth panel and a separate mobile-first login composition, including custom install prompts.
+- `client/src/features/auth/authMessages.js`: Normalizes common Supabase Auth failures into staff-friendly messages.
 - `client/src/layouts/AppLayout.jsx`: Main authenticated shell with role-specific navigation, responsive staff mobile header, sign-out, and Manila clock.
 - `client/src/lib/supabaseClient.js`: Creates the Supabase client when env vars are present. Returns `null` when not configured.
 - `client/src/services/attendanceService.js`: Staff attendance RPC calls, selfie storage paths/uploads, selfie attachment RPC, signed URL helpers, history loading, and user-facing attendance error normalization.

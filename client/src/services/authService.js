@@ -5,7 +5,7 @@ export async function signInWithPassword({ email, password }) {
     throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
 
   if (error) throw error
   return data
@@ -25,7 +25,7 @@ export async function requestPasswordReset(email) {
   }
 
   const redirectTo = `${window.location.origin}/reset-password`
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo })
 
   if (error) throw error
 }

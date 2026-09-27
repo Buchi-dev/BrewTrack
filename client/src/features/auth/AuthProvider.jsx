@@ -38,17 +38,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let ignore = false
 
-    async function restoreSession() {
-      if (!supabase) {
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase.auth.getSession()
-
-      if (ignore) return
-
+    async function applySession(nextSession, error = null) {
       if (error) {
+        if (ignore) return
         setSession(null)
         setProfile(null)
         setAuthError(error)
@@ -56,17 +48,31 @@ export function AuthProvider({ children }) {
         return
       }
 
-      setSession(data.session)
+      if (ignore) return
+
+      setSession(nextSession)
 
       try {
-        await loadProfile(data.session?.user)
+        await loadProfile(nextSession?.user)
+        if (ignore) return
         setAuthError(null)
       } catch (error) {
+        if (ignore) return
         setProfile(null)
         setAuthError(error)
       } finally {
         if (!ignore) setLoading(false)
       }
+    }
+
+    async function restoreSession() {
+      if (!supabase) {
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase.auth.getSession()
+      await applySession(data?.session ?? null, error)
     }
 
     restoreSession()
@@ -76,18 +82,9 @@ export function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (ignore) return
       setLoading(true)
-      setSession(nextSession)
-
-      try {
-        await loadProfile(nextSession?.user)
-        setAuthError(null)
-      } catch (error) {
-        setProfile(null)
-        setAuthError(error)
-      } finally {
-        setLoading(false)
-      }
+      await applySession(nextSession)
     })
 
     return () => {

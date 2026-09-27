@@ -8,33 +8,17 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { Alert, Button, Checkbox, Form, Input, Modal, Spin, Typography, message } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { BRAND } from '../../constants/brand.js'
 import { ROUTES } from '../../constants/routes.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus.js'
 import { usePWAInstall } from '../../hooks/usePWAInstall.js'
 import { signInWithPassword } from '../../services/authService.js'
+import { getFriendlyAuthError } from './authMessages.js'
 
 const { Text, Title } = Typography
-
-function getFriendlyAuthError(error) {
-  const message = error?.message ?? ''
-
-  if (/invalid login|invalid.*credentials/i.test(message)) {
-    return 'Incorrect email or password.'
-  }
-
-  if (/failed to fetch|network|connection/i.test(message)) {
-    return 'Unable to sign in. Check your connection and try again.'
-  }
-
-  if (/not configured|supabase/i.test(message)) {
-    return message
-  }
-
-  return 'Unable to sign in. Check your details and try again.'
-}
 
 function MobileLoginHeader() {
   return (
@@ -190,23 +174,11 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, isConfigured, loading } = useAuth()
+  const isOnline = useOnlineStatus()
   const [api, contextHolder] = message.useMessage()
   const [errorMessage, setErrorMessage] = useState(null)
-  const [isOffline, setIsOffline] = useState(() => !navigator.onLine)
   const [submitting, setSubmitting] = useState(false)
   const from = location.state?.from?.pathname || '/'
-
-  useEffect(() => {
-    const updateOnlineState = () => setIsOffline(!navigator.onLine)
-
-    window.addEventListener('online', updateOnlineState)
-    window.addEventListener('offline', updateOnlineState)
-
-    return () => {
-      window.removeEventListener('online', updateOnlineState)
-      window.removeEventListener('offline', updateOnlineState)
-    }
-  }, [])
 
   if (loading) {
     return (
@@ -228,7 +200,7 @@ export default function LoginPage() {
       await signInWithPassword(values)
       navigate(from, { replace: true })
     } catch (error) {
-      const friendlyMessage = getFriendlyAuthError(error)
+      const friendlyMessage = getFriendlyAuthError(error, 'Unable to sign in. Check your details and try again.')
       setErrorMessage(friendlyMessage)
       api.error(friendlyMessage)
     } finally {
@@ -250,7 +222,7 @@ export default function LoginPage() {
       <LoginForm
         errorMessage={errorMessage}
         isConfigured={isConfigured}
-        isOffline={isOffline}
+        isOffline={!isOnline}
         onFinish={handleFinish}
         submitting={submitting}
       />

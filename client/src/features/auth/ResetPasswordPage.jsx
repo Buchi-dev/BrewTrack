@@ -1,34 +1,46 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Form, Input, Result, Spin, Typography, message } from 'antd'
+import { Alert, Button, Form, Input, Result, Spin, Typography, message } from 'antd'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus.js'
 import { requestPasswordReset, signOut, updatePassword } from '../../services/authService.js'
+import { getFriendlyAuthError } from './authMessages.js'
 
 const { Text, Title } = Typography
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate()
   const { isAuthenticated, isConfigured, loading } = useAuth()
+  const isOnline = useOnlineStatus()
   const [api, contextHolder] = message.useMessage()
+  const [sendingReset, setSendingReset] = useState(false)
+  const [updatingPassword, setUpdatingPassword] = useState(false)
 
   async function handleFinish({ email }) {
+    setSendingReset(true)
     try {
       await requestPasswordReset(email)
       api.success('Password reset instructions sent.')
     } catch (error) {
-      api.error(error.message)
+      api.error(getFriendlyAuthError(error, 'Unable to send reset instructions. Please try again.'))
+    } finally {
+      setSendingReset(false)
     }
   }
 
   async function handlePasswordUpdate({ password }) {
+    setUpdatingPassword(true)
     try {
       await updatePassword(password)
       api.success('Password updated. Please sign in with your new password.')
       await signOut()
       navigate(ROUTES.login, { replace: true })
     } catch (error) {
-      api.error(error.message)
+      api.error(getFriendlyAuthError(error, 'Unable to update password. Please try again.'))
+    } finally {
+      setUpdatingPassword(false)
     }
   }
 
@@ -49,6 +61,14 @@ export default function ResetPasswordPage() {
           ? 'Enter a new password for your attendance account.'
           : 'We will send reset instructions to your email address.'}
       </Text>
+
+      {!isOnline && (
+        <Alert
+          type="warning"
+          showIcon
+          message="You're offline. Password reset needs an internet connection."
+        />
+      )}
 
       {!isConfigured ? (
         <Result
@@ -97,8 +117,15 @@ export default function ResetPasswordPage() {
             />
           </Form.Item>
 
-          <Button htmlType="submit" type="primary" size="large" block>
-            Update password
+          <Button
+            htmlType="submit"
+            type="primary"
+            size="large"
+            block
+            disabled={!isOnline || updatingPassword}
+            loading={updatingPassword}
+          >
+            {updatingPassword ? 'Updating...' : 'Update password'}
           </Button>
         </Form>
       ) : (
@@ -113,8 +140,15 @@ export default function ResetPasswordPage() {
           >
             <Input prefix={<MailOutlined />} type="email" autoComplete="email" size="large" />
           </Form.Item>
-          <Button htmlType="submit" type="primary" size="large" block>
-            Send reset link
+          <Button
+            htmlType="submit"
+            type="primary"
+            size="large"
+            block
+            disabled={!isOnline || sendingReset}
+            loading={sendingReset}
+          >
+            {sendingReset ? 'Sending...' : 'Send reset link'}
           </Button>
           <Link to={ROUTES.login}>Back to sign in</Link>
         </Form>

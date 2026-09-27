@@ -12,6 +12,7 @@ The frontend lives in `client/`. Supabase configuration and reproducible databas
 
 - Frontend: React 19, Vite 8, JavaScript modules, Ant Design 6, React Router 7, Supabase JS SDK.
 - Install mode: PWA manifest and service worker allow the app shell to open from a home-screen install after a prior online visit.
+- Deployment: Vercel serves React Router browser routes through `client/vercel.json`, rewriting all paths to `/index.html`.
 - Backend: Supabase Auth, Postgres tables, RLS policies, storage bucket policies, and RPC functions defined through SQL migrations.
 - Authentication model: Supabase Auth session plus a `profiles` row. The profile contains app role and account status.
 - Roles: `manager` and `staff`.

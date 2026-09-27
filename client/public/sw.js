@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brewtrack-app-v1'
+const CACHE_NAME = 'brewtrack-app-v2'
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -33,6 +33,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          if (!response.ok) {
+            return caches.match('/index.html').then((cached) => cached || response)
+          }
+
           const copy = response.clone()
           caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy))
           return response

@@ -114,10 +114,33 @@ a {
   letter-spacing: 0;
 }
 
+.auth-card-heading {
+  display: grid;
+  gap: 8px;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.mobile-login-header,
+.install-card,
+.mobile-trust-row {
+  display: none;
+}
+
+.mobile-login-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -2px 0 8px;
+}
+
+.auth-submit-item.ant-form-item {
+  margin-bottom: 0;
 }
 
 .app-layout {
@@ -2398,6 +2421,182 @@ a {
 
   .schedule-assignment-context > div {
     padding: 8px;
+  }
+}
+
+@media (max-width: 767px) {
+  .auth-layout {
+    display: block;
+    min-height: 100dvh;
+    background: var(--brand-cream);
+  }
+
+  .auth-brand {
+    display: none;
+  }
+
+  .auth-panel {
+    display: block;
+    min-height: 100dvh;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      20px
+      max(20px, env(safe-area-inset-bottom));
+  }
+
+  .auth-card {
+    min-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)));
+    max-width: 430px;
+    gap: 16px;
+    justify-content: flex-start;
+  }
+
+  .mobile-login-header {
+    display: grid;
+    gap: 8px;
+    padding: 10px 0 2px;
+  }
+
+  .mobile-login-logo {
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .mobile-login-message.ant-typography {
+    max-width: 300px;
+    color: var(--text-main);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .install-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--brand-line);
+    border-radius: 14px;
+    background: #fffdf9;
+  }
+
+  .install-card > div:first-child {
+    display: grid;
+    gap: 2px;
+  }
+
+  .install-card .ant-typography-secondary {
+    font-size: 12px;
+  }
+
+  .install-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .auth-card-heading {
+    gap: 6px;
+    padding-top: 4px;
+  }
+
+  .auth-card h2.ant-typography {
+    font-size: 30px;
+    line-height: 1.12;
+  }
+
+  .auth-form {
+    gap: 2px;
+  }
+
+  .auth-form .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  .auth-form .ant-form-item-label {
+    padding-bottom: 5px;
+  }
+
+  .auth-form .ant-form-item-label > label {
+    height: auto;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .auth-form .ant-input-affix-wrapper,
+  .auth-form .ant-input {
+    min-height: 50px;
+    border-radius: 12px;
+  }
+
+  .auth-form .ant-input-affix-wrapper-focused,
+  .auth-form .ant-input-affix-wrapper:focus-within {
+    border-color: var(--brand-amber);
+    box-shadow: 0 0 0 3px rgba(200, 116, 22, 0.14);
+  }
+
+  .mobile-login-row {
+    margin: -2px 0 10px;
+    font-size: 13px;
+  }
+
+  .mobile-login-row .ant-checkbox-wrapper {
+    font-size: 13px;
+  }
+
+  .auth-submit-item.ant-form-item {
+    margin-bottom: 0;
+  }
+
+  .auth-submit-item .ant-btn {
+    min-height: 50px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .mobile-trust-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding-top: 2px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .mobile-trust-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ios-install-steps {
+    margin: 0;
+    padding-left: 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-panel {
+    padding-inline: 16px;
+  }
+
+  .auth-card h2.ant-typography {
+    font-size: 28px;
+  }
+
+  .install-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .install-card-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

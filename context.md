@@ -148,6 +148,7 @@ BrewTrack/
 - `client/src/app/App.jsx`: Wraps the app with Ant Design `App`, `AuthProvider`, and `AppRouter`.
 - `client/src/router/AppRouter.jsx`: Defines public auth routes, staff routes, manager routes, unauthorized page, redirects, and 404 fallback.
 - `client/src/features/auth/AuthProvider.jsx`: Restores the Supabase session, listens for auth changes, loads `profiles`, and exposes auth state.
+- `client/src/features/auth/LoginPage.jsx`: Uses shared Supabase sign-in behavior with a preserved desktop auth panel and a separate mobile-first login composition, including custom install prompts.
 - `client/src/layouts/AppLayout.jsx`: Main authenticated shell with role-specific navigation, responsive staff mobile header, sign-out, and Manila clock.
 - `client/src/lib/supabaseClient.js`: Creates the Supabase client when env vars are present. Returns `null` when not configured.
 - `client/src/services/attendanceService.js`: Staff attendance RPC calls, selfie storage paths/uploads, selfie attachment RPC, signed URL helpers, history loading, and user-facing attendance error normalization.
@@ -194,6 +195,8 @@ Offline sync is hardened server-side. Each queued attendance action uses a clien
 Staff must confirm identity before the camera opens. The confirmation shows employee name, employee number, station, connection state, and device ID. Shared-phone safety is strict: if a device has unsynced attendance for another employee, new attendance capture is blocked until that record syncs or a manager intervenes.
 
 PWA offline attendance is allowed only after online preparation. The device must have a restored Supabase session, a cached active profile for the same user, and today’s cached station schedule. Without that cached schedule, offline attendance is blocked with an instruction to connect to the internet or ask a manager.
+
+The login page is mobile-first below 768px: it hides the desktop hero, uses compact app-style branding, keeps sign-in as the primary task, shows offline sign-in messaging, and conditionally shows install prompts only when browser/platform signals make them relevant.
 
 Selfie path format:
 

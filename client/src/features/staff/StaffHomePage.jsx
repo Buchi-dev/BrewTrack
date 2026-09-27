@@ -7,6 +7,7 @@ import {
   EnvironmentOutlined,
   HistoryOutlined,
   ReloadOutlined,
+  SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
 import { Alert, Button, Card, Col, Empty, List, Row, Statistic, Tag, Typography } from 'antd'
@@ -19,6 +20,12 @@ import {
   getStaffAttendanceHistory,
   getTodayAttendance,
 } from '../../services/attendanceService.js'
+import { syncOfflineAttendance } from '../../services/attendanceSyncService.js'
+import {
+  OFFLINE_ATTENDANCE_STATUSES,
+  getOfflineAttendanceRecords,
+  subscribeToAttendanceSyncUpdates,
+} from '../../services/offlineAttendanceService.js'
 import {
   getStationLabel,
   getStationRoleLabel,
@@ -36,10 +43,13 @@ const STATUS_COLORS = {
   excused: 'blue',
   incomplete: 'processing',
   late: 'warning',
+  pending_sync: 'warning',
   present: 'success',
 }
 
-function getTodayStatusLabel(attendance) {
+function getTodayStatusLabel(attendance, pendingRecords = []) {
+  if (pendingRecords.some((record) => record.action === 'clockOut')) return 'Clock-out pending sync'
+  if (pendingRecords.some((record) => record.action === 'clockIn') && !attendance?.clock_in_at) return 'Clock-in pending sync'
   if (!attendance?.clock_in_at) return 'Not clocked in'
   if (!attendance?.clock_out_at) return 'Working'
   return 'Completed'
@@ -64,17 +74,59 @@ function getTeamMemberName(member) {
   return [member?.firstName, member?.middleName, member?.lastName].filter(Boolean).join(' ') || 'Unnamed staff'
 }
 
+function mergePendingAttendance(attendance, pendingRecords) {
+  if (!pendingRecords.length) return attendance
+
+  const pendingClockIn = pendingRecords.find((record) => record.action === 'clockIn')
+  const pendingClockOut = pendingRecords.find((record) => record.action === 'clockOut')
+
+  return {
+    ...(attendance ?? {}),
+    clock_in_at: attendance?.clock_in_at ?? pendingClockIn?.capturedAt ?? null,
+    clock_out_at: attendance?.clock_out_at ?? pendingClockOut?.capturedAt ?? null,
+    status: pendingRecords.length ? 'pending_sync' : attendance?.status,
+  }
+}
+
+function getPendingSyncMessage(records) {
+  if (records.some((record) => record.status === OFFLINE_ATTENDANCE_STATUSES.failed)) {
+    return 'Attendance is saved on this device, but sync needs another try.'
+  }
+
+  if (records.some((record) => record.status === OFFLINE_ATTENDANCE_STATUSES.uploading)) {
+    return 'Attendance is saved on this device and is syncing now.'
+  }
+
+  return 'Attendance is saved on this device and will sync when internet is available.'
+}
+
 export default function StaffHomePage() {
   const { profile } = useAuth()
   const [todayAttendance, setTodayAttendance] = useState(null)
   const [todaySchedule, setTodaySchedule] = useState(null)
   const [recentRecords, setRecentRecords] = useState([])
+  const [pendingRecords, setPendingRecords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
   const [cameraOpen, setCameraOpen] = useState(false)
 
   const firstName = profile?.first_name || 'there'
   const branchName = todaySchedule ? getStationLabel(todaySchedule) : 'No station scheduled'
+  const displayAttendance = useMemo(
+    () => mergePendingAttendance(todayAttendance, pendingRecords),
+    [pendingRecords, todayAttendance],
+  )
+
+  const loadPendingRecords = useCallback(async () => {
+    if (!profile?.id) {
+      setPendingRecords([])
+      return
+    }
+
+    const records = await getOfflineAttendanceRecords({ userId: profile?.id })
+    setPendingRecords(records)
+  }, [profile?.id])
 
   const loadSummary = useCallback(async () => {
     setLoading(true)
@@ -96,6 +148,19 @@ export default function StaffHomePage() {
       setLoading(false)
     }
   }, [])
+
+  const retrySync = useCallback(async () => {
+    if (!profile?.id) return
+
+    setSyncing(true)
+
+    try {
+      await syncOfflineAttendance({ userId: profile?.id })
+      await Promise.all([loadPendingRecords(), loadSummary()])
+    } finally {
+      setSyncing(false)
+    }
+  }, [loadPendingRecords, loadSummary, profile?.id])
 
   useEffect(() => {
     let active = true
@@ -125,8 +190,26 @@ export default function StaffHomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    const unsubscribe = subscribeToAttendanceSyncUpdates(loadPendingRecords)
+    const handleOnline = () => {
+      retrySync()
+    }
+
+    globalThis.addEventListener('online', handleOnline)
+    queueMicrotask(() => {
+      loadPendingRecords()
+      if (navigator.onLine) retrySync()
+    })
+
+    return () => {
+      unsubscribe()
+      globalThis.removeEventListener('online', handleOnline)
+    }
+  }, [loadPendingRecords, retrySync])
+
   const completedThisMonth = useMemo(() => getCompletedCount(recentRecords), [recentRecords])
-  const nextAction = getNextActionText(todayAttendance)
+  const nextAction = getNextActionText(displayAttendance)
   const isComplete = nextAction === 'View attendance'
   const trainer = todaySchedule?.team?.find((member) => member.employeeId === todaySchedule.trainerEmployeeId)
   const trainee = todaySchedule?.team?.find((member) => member.trainerEmployeeId === profile?.id)
@@ -146,11 +229,25 @@ export default function StaffHomePage() {
         <Alert className="section-card" type="error" showIcon message={errorMessage} />
       )}
 
+      {pendingRecords.length > 0 && (
+        <Alert
+          className="section-card attendance-sync-alert"
+          type="warning"
+          showIcon
+          message={getPendingSyncMessage(pendingRecords)}
+          action={
+            <Button size="small" icon={<SyncOutlined />} loading={syncing} onClick={retrySync}>
+              Retry sync
+            </Button>
+          }
+        />
+      )}
+
       <Card className="staff-dashboard-hero" bordered={false}>
         <div className="staff-dashboard-hero-main">
           <div className="staff-dashboard-hero-topline">
             <Text className="attendance-kicker">Today’s shift</Text>
-            <Tag color={getStatusColor(todayAttendance)}>{getTodayStatusLabel(todayAttendance)}</Tag>
+            <Tag color={getStatusColor(displayAttendance)}>{getTodayStatusLabel(displayAttendance, pendingRecords)}</Tag>
           </div>
           <Typography.Title level={2}>
             {isComplete ? 'You’re all set.' : nextAction === 'Clock out' ? 'Finish strong.' : 'Ready when you are.'}
@@ -183,12 +280,12 @@ export default function StaffHomePage() {
           <Card className="staff-metric-card staff-metric-status">
             <Statistic
               title="Today's status"
-              value={getTodayStatusLabel(todayAttendance)}
+              value={getTodayStatusLabel(displayAttendance, pendingRecords)}
               prefix={<ClockCircleOutlined />}
               loading={loading}
             />
-            <Tag className="status-tag" color={getStatusColor(todayAttendance)}>
-              {todayAttendance?.status || 'Waiting'}
+            <Tag className="status-tag" color={getStatusColor(displayAttendance)}>
+              {displayAttendance?.status || 'Waiting'}
             </Tag>
           </Card>
         </Col>
@@ -273,13 +370,13 @@ export default function StaffHomePage() {
                 <span className="staff-shift-dot"><CalendarOutlined /></span>
                 <div><Text strong>{formatDate(new Date())}</Text><Text type="secondary">Your shift at {branchName}</Text></div>
               </div>
-              <div className={`staff-shift-line ${todayAttendance?.clock_in_at ? 'is-done' : ''}`}>
+              <div className={`staff-shift-line ${displayAttendance?.clock_in_at ? 'is-done' : ''}`}>
                 <span className="staff-shift-dot"><ClockCircleOutlined /></span>
-                <div><Text strong>Clock in</Text><Text type="secondary">{formatTime(todayAttendance?.clock_in_at)}</Text></div>
+                <div><Text strong>Clock in</Text><Text type="secondary">{formatTime(displayAttendance?.clock_in_at)}</Text></div>
               </div>
-              <div className={`staff-shift-line ${todayAttendance?.clock_out_at ? 'is-done' : ''}`}>
+              <div className={`staff-shift-line ${displayAttendance?.clock_out_at ? 'is-done' : ''}`}>
                 <span className="staff-shift-dot"><CheckCircleOutlined /></span>
-                <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(todayAttendance?.clock_out_at)}</Text></div>
+                <div><Text strong>Clock out</Text><Text type="secondary">{formatTime(displayAttendance?.clock_out_at)}</Text></div>
               </div>
             </div>
           </Card>
@@ -300,13 +397,14 @@ export default function StaffHomePage() {
       </Row>
 
       <AttendanceFlowModal
-        key={`${cameraOpen ? 'open' : 'closed'}-${todayAttendance?.id ?? 'none'}-${todayAttendance?.clock_in_at ?? 'none'}-${todayAttendance?.clock_out_at ?? 'none'}`}
+        key={`${cameraOpen ? 'open' : 'closed'}-${displayAttendance?.id ?? 'none'}-${displayAttendance?.clock_in_at ?? 'none'}-${displayAttendance?.clock_out_at ?? 'none'}`}
         open={cameraOpen}
-        attendance={todayAttendance}
+        attendance={displayAttendance}
         assignedStationLabel={todaySchedule ? branchName : null}
         onClose={() => setCameraOpen(false)}
         onSubmitted={() => {
           setCameraOpen(false)
+          loadPendingRecords()
           loadSummary()
         }}
       />

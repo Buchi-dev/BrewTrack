@@ -91,7 +91,9 @@ BrewTrack/
         RoleRedirect.jsx
       services/
         attendanceService.js
+        attendanceSyncService.js
         authService.js
+        offlineAttendanceService.js
         profileService.js
         query.js
         manager/
@@ -145,6 +147,8 @@ BrewTrack/
 - `client/src/layouts/AppLayout.jsx`: Main authenticated shell with role-specific navigation, responsive staff mobile header, sign-out, and Manila clock.
 - `client/src/lib/supabaseClient.js`: Creates the Supabase client when env vars are present. Returns `null` when not configured.
 - `client/src/services/attendanceService.js`: Staff attendance RPC calls, selfie storage paths/uploads, selfie attachment RPC, signed URL helpers, history loading, and user-facing attendance error normalization.
+- `client/src/services/attendanceSyncService.js`: Replays pending local attendance records, creates the server attendance record when needed, uploads/attaches selfies, and clears synced queue items.
+- `client/src/services/offlineAttendanceService.js`: IndexedDB-backed queue for locally saved attendance selfies and pending sync state.
 - `client/src/services/manager/stationScheduleService.js`: Station schedule CRUD, role labels, station labels, time formatting, and today's station assignment RPC.
 - `client/src/index.css`: Global styling for layouts, feature pages, camera flow, schedules, and responsive behavior.
 
@@ -178,6 +182,8 @@ Staff clock-in/out is deliberately split into two steps:
 
 The app keeps track of pending evidence so a processed attendance time can still receive its selfie if upload/attachment fails and the user retries.
 
+If the browser is offline before submit, or the network/storage step fails, the staff dashboard treats the clock action as locally recorded and shows a pending sync state. Pending records are stored in IndexedDB and retried when the app opens, when internet returns, or when staff taps retry.
+
 Selfie path format:
 
 ```text
@@ -197,6 +203,7 @@ Managers schedule staff by date and station through `ManagerSchedulesPage`.
 - Each station/date is capped at four assigned staff.
 - The UI treats three to four staff as ready staffing and highlights empty or understaffed stations.
 - Staff clock-in requires a station schedule assignment for the current Manila/station attendance date.
+- Staff attendance evidence can be saved locally in IndexedDB when the browser is offline or Supabase upload fails, then synchronized later.
 
 ## Supabase Schema Overview
 

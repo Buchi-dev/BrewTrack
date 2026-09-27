@@ -12,6 +12,8 @@ import {
   getTodayAttendance,
   storeAttendanceSelfie,
 } from '../../services/attendanceService.js'
+import { syncOfflineAttendance } from '../../services/attendanceSyncService.js'
+import { queueOfflineAttendance } from '../../services/offlineAttendanceService.js'
 import { formatDateTime } from '../../utils/date.js'
 
 const { Text, Title } = Typography
@@ -50,6 +52,14 @@ function getAttendanceDate(result) {
 
 function getFullName(profile) {
   return [profile?.first_name, profile?.middle_name, profile?.last_name].filter(Boolean).join(' ').trim()
+}
+
+function shouldQueueAttendance(error) {
+  return (
+    !navigator.onLine
+    || error?.name === 'TypeError'
+    || /failed to fetch|network|fetch|connection/i.test(error?.message ?? '')
+  )
 }
 
 function getAssignedStationLabel({ assignedStationLabel, attendance, profile }) {
@@ -96,8 +106,24 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
     setSubmitting(true)
     let attendanceId = pendingEvidence?.attendanceId ?? null
     let attendanceDate = pendingEvidence?.attendanceDate ?? null
+    const capturedAt = new Date().toISOString()
 
     try {
+      if (!navigator.onLine) {
+        await queueOfflineAttendance({
+          userId: user?.id || profile?.id,
+          action: actionToSubmit,
+          photoBlob: result.blob,
+          capturedAt,
+          attendanceId,
+          attendanceDate,
+        })
+
+        messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} recorded. It will sync when internet returns.`)
+        onSubmitted?.({ queued: true })
+        return
+      }
+
       if (actionToSubmit === 'clockOut') {
         const currentAttendance = await getTodayAttendance()
         if (!(currentAttendance?.clock_in_at && !currentAttendance?.clock_out_at)) {
@@ -124,7 +150,28 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
       messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} submitted successfully.`)
       onSubmitted?.()
     } catch (error) {
-      if (attendanceId) setPendingEvidence({ attendanceId, attendanceDate: attendanceDate ?? new Date(), eventType: actionToSubmit })
+      if (attendanceId || shouldQueueAttendance(error)) {
+        try {
+          await queueOfflineAttendance({
+            userId: user?.id || profile?.id,
+            action: actionToSubmit,
+            photoBlob: result.blob,
+            capturedAt,
+            attendanceId,
+            attendanceDate: attendanceDate ?? capturedAt,
+          })
+
+          if (attendanceId) setPendingEvidence({ attendanceId, attendanceDate: attendanceDate ?? new Date(), eventType: actionToSubmit })
+          messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} recorded. Selfie sync is pending.`)
+          syncOfflineAttendance({ userId: user?.id || profile?.id })
+          onSubmitted?.({ queued: true })
+          return
+        } catch (queueError) {
+          messageApi.error(queueError.message || 'Unable to save attendance on this device.')
+          return
+        }
+      }
+
       messageApi.error(getAttendanceErrorMessage(error, 'Unable to submit attendance.'))
     } finally {
       submittingRef.current = false

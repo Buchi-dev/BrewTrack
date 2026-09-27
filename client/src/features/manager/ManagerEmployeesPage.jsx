@@ -1,8 +1,10 @@
-import { EditOutlined, InfoCircleOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserSwitchOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Col, Empty, Form, Input, Modal, Row, Select, Space, Statistic, Table, Tag, Typography } from 'antd'
+import { EditOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserDeleteOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Card, Col, Empty, Form, Input, Modal, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
 import {
+  createEmployeeProfile,
+  deactivateEmployeeProfile,
   getFullName,
   listEmployees,
   saveEmployeeProfile,
@@ -11,6 +13,7 @@ import {
 const { Text } = Typography
 const PAGE_SIZE = 10
 const initialEmployeeFilters = { page: 1, pageSize: PAGE_SIZE, search: '', status: null }
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -37,8 +40,9 @@ export default function ManagerEmployeesPage() {
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deactivatingId, setDeactivatingId] = useState(null)
   const [editingEmployee, setEditingEmployee] = useState(null)
-  const [inviteOpen, setInviteOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const [filters, setFilters] = useState(initialEmployeeFilters)
 
   const employeeSummary = useMemo(
@@ -87,17 +91,25 @@ export default function ManagerEmployeesPage() {
     }
   }, [message])
 
-  function openEditor(employee) {
+  function openEditor(employee = null) {
     setEditingEmployee(employee)
+    setModalOpen(true)
     form.setFieldsValue({
-      first_name: employee.first_name,
-      middle_name: employee.middle_name,
-      last_name: employee.last_name,
-      employee_number: employee.employee_number,
-      phone: employee.phone,
-      role: employee.role,
-      status: employee.status,
+      auth_user_id: employee?.id,
+      first_name: employee?.first_name,
+      middle_name: employee?.middle_name,
+      last_name: employee?.last_name,
+      employee_number: employee?.employee_number,
+      phone: employee?.phone,
+      role: employee?.role ?? 'staff',
+      status: employee?.status ?? 'active',
     })
+  }
+
+  function closeEditor() {
+    setModalOpen(false)
+    setEditingEmployee(null)
+    form.resetFields()
   }
 
   const columns = [
@@ -130,9 +142,28 @@ export default function ManagerEmployeesPage() {
       key: 'actions',
       align: 'right',
       render: (_, record) => (
-        <Button icon={<EditOutlined />} onClick={() => openEditor(record)}>
-          Edit
-        </Button>
+        <Space>
+          <Button icon={<EditOutlined />} onClick={() => openEditor(record)}>
+            Edit
+          </Button>
+          <Popconfirm
+            title="Deactivate employee?"
+            description="This keeps historical records intact and removes the employee from active staffing."
+            okText="Deactivate"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => handleDeactivate(record)}
+            disabled={record.status === 'inactive'}
+          >
+            <Button
+              danger
+              icon={<UserDeleteOutlined />}
+              loading={deactivatingId === record.id}
+              disabled={record.status === 'inactive'}
+            >
+              Deactivate
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ]
@@ -147,15 +178,32 @@ export default function ManagerEmployeesPage() {
     const values = await form.validateFields()
     setSaving(true)
     try {
-      await saveEmployeeProfile(editingEmployee.id, values)
-      message.success('Employee updated.')
-      setEditingEmployee(null)
-      form.resetFields()
+      if (editingEmployee) {
+        await saveEmployeeProfile(editingEmployee.id, values)
+        message.success('Employee updated.')
+      } else {
+        await createEmployeeProfile(values)
+        message.success('Employee added.')
+      }
+      closeEditor()
       loadData(filters)
     } catch (error) {
       message.error(error.message || 'Unable to save employee.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDeactivate(employee) {
+    setDeactivatingId(employee.id)
+    try {
+      await deactivateEmployeeProfile(employee.id)
+      message.success('Employee deactivated.')
+      loadData(filters)
+    } catch (error) {
+      message.error(error.message || 'Unable to deactivate employee.')
+    } finally {
+      setDeactivatingId(null)
     }
   }
 
@@ -176,7 +224,7 @@ export default function ManagerEmployeesPage() {
         title="Employees"
         description="Manage staff profiles, roles, and account status."
         actions={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>
             Add employee
           </Button>
         }
@@ -246,14 +294,38 @@ export default function ManagerEmployeesPage() {
       </Card>
 
       <Modal
-        title="Edit employee"
-        open={Boolean(editingEmployee)}
-        onCancel={() => setEditingEmployee(null)}
+        title={editingEmployee ? 'Edit employee' : 'Add employee'}
+        open={modalOpen}
+        onCancel={closeEditor}
         onOk={handleSave}
         confirmLoading={saving}
-        okText="Save changes"
+        okText={editingEmployee ? 'Save changes' : 'Add employee'}
       >
         <Form form={form} layout="vertical" requiredMark={false}>
+          {!editingEmployee && (
+            <Alert
+              className="manager-page-alert"
+              type="info"
+              showIcon
+              title="Use the Supabase Auth user id"
+              description="Create or invite the user in Supabase Auth first, then paste that user's id here to manage their BrewTrack profile."
+            />
+          )}
+          <Form.Item
+            name="auth_user_id"
+            label="Auth user id"
+            rules={[
+              { required: !editingEmployee, message: 'Enter the Supabase Auth user id.' },
+              {
+                validator: (_, value) => {
+                  if (editingEmployee || !value || uuidPattern.test(value.trim())) return Promise.resolve()
+                  return Promise.reject(new Error('Enter a valid UUID.'))
+                },
+              },
+            ]}
+          >
+            <Input disabled={Boolean(editingEmployee)} placeholder="00000000-0000-0000-0000-000000000000" />
+          </Form.Item>
           <Form.Item name="first_name" label="First name" rules={[{ required: true, message: 'Enter a first name.' }]}>
             <Input />
           </Form.Item>
@@ -276,16 +348,6 @@ export default function ManagerEmployeesPage() {
             <Select options={statusOptions} />
           </Form.Item>
         </Form>
-      </Modal>
-
-      <Modal title="Add employee account" open={inviteOpen} onCancel={() => setInviteOpen(false)} footer={null}>
-        <Alert
-          type="info"
-          showIcon
-          icon={<InfoCircleOutlined />}
-          title="Account creation needs a secure invite flow"
-          description="This browser app should not hold Supabase admin credentials. For now, create the user in Supabase Auth with profile metadata, then manage the employee profile here. A secure invite function belongs in a later backend milestone."
-        />
       </Modal>
     </>
   )

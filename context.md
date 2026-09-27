@@ -179,6 +179,12 @@ Routes are centralized in `client/src/constants/routes.js`.
 5. Manager pages call manager service modules for domain-specific data.
 6. SQL RPC functions enforce sensitive attendance behavior server-side.
 
+## Employee Management
+
+Managers can list, search, filter, create, edit, and deactivate employee profiles from `ManagerEmployeesPage`.
+Adding an employee profile requires an existing Supabase Auth user id; secure Auth user invitation/creation remains outside the browser app so admin credentials are never exposed client-side.
+Deactivation is the supported removal path because historical attendance, schedule, and audit records reference profile rows.
+
 ## Attendance Flow
 
 Staff clock-in/out is deliberately split into two steps:

@@ -78,7 +78,44 @@ export async function listActiveStaff() {
 export async function saveEmployeeProfile(employeeId, values) {
   if (!supabase || !employeeId) return null
 
+  const payload = getEmployeePayload(values)
+
+  const { data, error } = await supabase.from('profiles').update(payload).eq('id', employeeId).select().single()
+  if (error) throw error
+
+  return data
+}
+
+export async function createEmployeeProfile(values) {
+  if (!supabase) return null
+
   const payload = {
+    id: values.auth_user_id.trim(),
+    ...getEmployeePayload(values),
+  }
+
+  const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select().single()
+  if (error) throw error
+
+  return data
+}
+
+export async function deactivateEmployeeProfile(employeeId) {
+  if (!supabase || !employeeId) return null
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ status: 'inactive' })
+    .eq('id', employeeId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+function getEmployeePayload(values) {
+  return {
     first_name: values.first_name.trim(),
     middle_name: values.middle_name?.trim() || null,
     last_name: values.last_name.trim(),
@@ -87,9 +124,4 @@ export async function saveEmployeeProfile(employeeId, values) {
     role: values.role,
     status: values.status,
   }
-
-  const { data, error } = await supabase.from('profiles').update(payload).eq('id', employeeId).select().single()
-  if (error) throw error
-
-  return data
 }

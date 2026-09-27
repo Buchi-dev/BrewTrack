@@ -8,6 +8,7 @@ export const OFFLINE_ATTENDANCE_STATUSES = {
   uploading: 'uploading',
   synced: 'synced',
   failed: 'failed',
+  needsReview: 'needs_review',
 }
 
 function getIndexedDb() {
@@ -87,12 +88,44 @@ export async function queueOfflineAttendance({
   capturedAt = new Date().toISOString(),
   attendanceId = null,
   attendanceDate = null,
+  deviceId = null,
 } = {}) {
   if (!userId) throw new Error('User is required before saving offline attendance.')
   if (!['clockIn', 'clockOut'].includes(action)) throw new Error('Attendance action is required.')
   if (!(photoBlob instanceof Blob)) throw new Error('A captured selfie is required before saving offline attendance.')
 
   const now = new Date().toISOString()
+  const existingRecords = await getOfflineAttendanceRecords()
+  const pendingOtherUser = existingRecords.find((record) => record.userId !== userId)
+
+  if (pendingOtherUser) {
+    throw new Error('This device has unsynced attendance for another employee. Sync it first or ask a manager.')
+  }
+
+  const capturedDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(capturedAt))
+  const duplicateAction = existingRecords.find((record) => {
+    if (record.id === id) return false
+    if (record.userId !== userId || record.action !== action) return false
+
+    const recordDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(record.capturedAt))
+
+    return recordDate === capturedDate
+  })
+
+  if (duplicateAction) {
+    throw new Error('This device already has pending attendance for this action today. Sync it before trying again.')
+  }
+
   const record = {
     id,
     userId,
@@ -101,6 +134,7 @@ export async function queueOfflineAttendance({
     capturedAt,
     attendanceId,
     attendanceDate,
+    deviceId,
     status: OFFLINE_ATTENDANCE_STATUSES.pending,
     attempts: 0,
     lastAttemptAt: null,

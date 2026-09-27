@@ -265,6 +265,7 @@ export async function clockIn({
   clientEventId = null,
   capturedAt = null,
   wasOffline = false,
+  deviceId = null,
 } = {}) {
   if (!supabase) return null
 
@@ -275,6 +276,7 @@ export async function clockIn({
     p_client_event_id: clientEventId,
     p_captured_at: capturedAt,
     p_was_offline: wasOffline,
+    p_device_id: deviceId,
   })
 
   if (error) throw error
@@ -288,6 +290,7 @@ export async function clockOut({
   clientEventId = null,
   capturedAt = null,
   wasOffline = false,
+  deviceId = null,
 } = {}) {
   if (!supabase) return null
 
@@ -298,6 +301,7 @@ export async function clockOut({
     p_client_event_id: clientEventId,
     p_captured_at: capturedAt,
     p_was_offline: wasOffline,
+    p_device_id: deviceId,
   })
 
   if (error) throw error

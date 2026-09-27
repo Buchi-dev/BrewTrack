@@ -52,6 +52,7 @@ const reportTypes = [
   { value: 'employee', label: 'Employee' },
   { value: 'late', label: 'Late' },
   { value: 'missingClockOut', label: 'Missing clock-out' },
+  { value: 'offlineReview', label: 'Offline review' },
 ]
 
 const initialFilters = {
@@ -93,6 +94,14 @@ function getStatusLabel(record) {
   return record?.status || 'Recorded'
 }
 
+function needsOfflineReview(record) {
+  return Boolean(record?.clock_in_requires_review || record?.clock_out_requires_review)
+}
+
+function hasOfflineSync(record) {
+  return Boolean(record?.clock_in_was_offline || record?.clock_out_was_offline)
+}
+
 function getReportTitle(reportType) {
   return reportTypes.find((option) => option.value === reportType)?.label || 'Report'
 }
@@ -117,6 +126,10 @@ function buildReportRequest(filters, overrides = {}) {
     baseRequest.employeeId = nextFilters.employeeId
   }
 
+  if (nextFilters.reportType === 'offlineReview') {
+    baseRequest.needsOfflineReview = true
+  }
+
   return baseRequest
 }
 
@@ -125,6 +138,7 @@ function getReportLoader(reportType) {
   if (reportType === 'employee') return listEmployeeAttendanceReport
   if (reportType === 'late') return listLateAttendanceReport
   if (reportType === 'missingClockOut') return listMissingClockOutReport
+  if (reportType === 'offlineReview') return listMonthlyAttendanceReport
   return listDailyAttendanceReport
 }
 
@@ -134,6 +148,7 @@ function calculateSummary(rows, count) {
     completed: rows.filter((record) => record.status === 'completed').length,
     late: rows.filter((record) => Number(record.late_minutes ?? 0) > 0 || record.status === 'late').length,
     missingClockOut: rows.filter((record) => record.clock_in_at && !record.clock_out_at).length,
+    offlineReview: rows.filter(needsOfflineReview).length,
     workedMinutes: rows.reduce((total, record) => total + Number(record.worked_minutes ?? 0), 0),
   }
 }
@@ -169,6 +184,12 @@ function toCsvRows(rows) {
       'Status',
       'Late Minutes',
       'Worked Minutes',
+      'Offline Capture',
+      'Needs Review',
+      'Clock In Device',
+      'Clock Out Device',
+      'Clock In Sync Delay Seconds',
+      'Clock Out Sync Delay Seconds',
       'Notes',
     ],
     ...rows.map((record) => [
@@ -181,6 +202,12 @@ function toCsvRows(rows) {
       getStatusLabel(record),
       record.late_minutes ?? '',
       record.worked_minutes ?? '',
+      hasOfflineSync(record) ? 'Yes' : 'No',
+      needsOfflineReview(record) ? 'Yes' : 'No',
+      record.clock_in_device_id || '',
+      record.clock_out_device_id || '',
+      record.clock_in_sync_delay_seconds ?? '',
+      record.clock_out_sync_delay_seconds ?? '',
       record.notes || '',
     ]),
   ]
@@ -356,7 +383,13 @@ export default function ManagerReportsPage() {
     {
       title: 'Status',
       key: 'status',
-      render: (_, record) => <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>,
+      render: (_, record) => (
+        <Space size={4} wrap>
+          <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>
+          {needsOfflineReview(record) && <Tag color="red">Review</Tag>}
+          {!needsOfflineReview(record) && hasOfflineSync(record) && <Tag color="gold">Offline</Tag>}
+        </Space>
+      ),
     },
     {
       title: 'Late',
@@ -441,7 +474,7 @@ export default function ManagerReportsPage() {
             />
           )}
 
-          {['employee', 'late', 'missingClockOut'].includes(filters.reportType) && (
+          {['employee', 'late', 'missingClockOut', 'offlineReview'].includes(filters.reportType) && (
             <RangePicker
               allowClear={false}
               suffixIcon={<CalendarOutlined />}
@@ -510,6 +543,11 @@ export default function ManagerReportsPage() {
           <Col xs={12} md={6}>
             <Card size="small" className="manager-summary-card">
               <Statistic title="Missing clock-outs on page" value={summary.missingClockOut} />
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card size="small" className="manager-summary-card">
+              <Statistic title="Offline reviews on page" value={summary.offlineReview} prefix={<WarningOutlined />} />
             </Card>
           </Col>
         </Row>

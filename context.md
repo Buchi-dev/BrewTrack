@@ -186,6 +186,8 @@ If the browser is offline before submit, or the network/storage step fails, the 
 
 Offline sync is hardened server-side. Each queued attendance action uses a client-generated event UUID for idempotent retries. The database stores captured time separately from synced time, rejects captured times that are too far in the future or more than 18 hours old, and flags records synced after more than 2 hours for manager review.
 
+Staff must confirm identity before the camera opens. The confirmation shows employee name, employee number, station, connection state, and device ID. Shared-phone safety is strict: if a device has unsynced attendance for another employee, new attendance capture is blocked until that record syncs or a manager intervenes.
+
 Selfie path format:
 
 ```text
@@ -216,7 +218,7 @@ Main tables:
 - `employee_branches`: Staff-to-branch assignments with a single primary branch per employee.
 - `work_schedules`: Legacy/general weekly schedules by employee, branch, and day of week.
 - `station_schedule_assignments`: Daily station staffing schedule used by current clock-in rules.
-- `attendance_records`: Clock-in/out records, photo paths, location, scheduled times, captured/synced offline audit fields, late/worked minutes, status, notes.
+- `attendance_records`: Clock-in/out records, photo paths, location, scheduled times, captured/synced offline audit fields, device IDs, late/worked minutes, status, notes.
 - `attendance_events`: Event stream for attendance changes.
 - `audit_logs`: Manager/audited operational changes.
 - `app_settings`: JSON settings such as organization name, default timezone, grace period, location/geofence toggles, and selfie quality.

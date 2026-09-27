@@ -1,8 +1,8 @@
 import {
   CheckCircleOutlined,
 } from '@ant-design/icons'
-import { Alert, Divider, Modal, Steps as AntSteps, Tag, Typography, message } from 'antd'
-import { useMemo, useRef, useState } from 'react'
+import { Alert, Button, Descriptions, Divider, Modal, Space, Steps as AntSteps, Tag, Typography, message } from 'antd'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AttendanceCamera from './AttendanceCamera.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import {
@@ -13,7 +13,8 @@ import {
   storeAttendanceSelfie,
 } from '../../services/attendanceService.js'
 import { syncOfflineAttendance } from '../../services/attendanceSyncService.js'
-import { queueOfflineAttendance } from '../../services/offlineAttendanceService.js'
+import { getOfflineAttendanceRecords, queueOfflineAttendance } from '../../services/offlineAttendanceService.js'
+import { getDeviceId } from '../../services/deviceService.js'
 import { formatDateTime } from '../../utils/date.js'
 
 const { Text, Title } = Typography
@@ -78,6 +79,8 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
   const { profile, user } = useAuth()
   const [pendingEvidence, setPendingEvidence] = useState(() => getPendingEvidence(attendance))
   const [capturedPhoto, setCapturedPhoto] = useState(null)
+  const [identityConfirmed, setIdentityConfirmed] = useState(false)
+  const [sharedDeviceBlock, setSharedDeviceBlock] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const [messageApi, contextHolder] = message.useMessage()
@@ -86,11 +89,37 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
   const effectiveAction = pendingEvidence?.eventType ?? nextAction
   const actionLabel = effectiveAction ? ATTENDANCE_ACTIONS[effectiveAction] : 'COMPLETED'
   const employeeName = getFullName(profile) || user?.email || 'Employee'
+  const employeeNumber = profile?.employee_number || 'No employee number'
   const branchName = getAssignedStationLabel({ assignedStationLabel, attendance, profile })
+  const deviceId = useMemo(() => getDeviceId(), [])
+  const connectionLabel = navigator.onLine ? 'ONLINE CAPTURE' : 'OFFLINE CAPTURE'
   const watermarkLines = useMemo(
-    () => [employeeName.toUpperCase(), actionLabel, formatDateTime(new Date()), branchName],
-    [actionLabel, branchName, employeeName],
+    () => [employeeName.toUpperCase(), employeeNumber, actionLabel, formatDateTime(new Date()), branchName, connectionLabel, deviceId],
+    [actionLabel, branchName, connectionLabel, deviceId, employeeName, employeeNumber],
   )
+
+  useEffect(() => {
+    let active = true
+
+    async function checkSharedDevice() {
+      const records = await getOfflineAttendanceRecords()
+      const otherUserRecord = records.find((record) => record.userId !== (user?.id || profile?.id))
+
+      if (active) setSharedDeviceBlock(otherUserRecord || null)
+    }
+
+    if (open) {
+      queueMicrotask(() => {
+        if (!active) return
+        setIdentityConfirmed(false)
+        checkSharedDevice()
+      })
+    }
+
+    return () => {
+      active = false
+    }
+  }, [open, profile?.id, user?.id])
 
   const handleContinue = async (result) => {
     if (submittingRef.current || submitting) return
@@ -119,6 +148,7 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
           capturedAt,
           attendanceId,
           attendanceDate,
+          deviceId,
         })
 
         messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} recorded. It will sync when internet returns.`)
@@ -134,7 +164,7 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
       }
 
       if (!pendingEvidence) {
-        const attendancePayload = { clientEventId, capturedAt, wasOffline: false }
+        const attendancePayload = { clientEventId, capturedAt, wasOffline: false, deviceId }
         const created = actionToSubmit === 'clockIn'
           ? await clockIn(attendancePayload)
           : await clockOut(attendancePayload)
@@ -165,6 +195,7 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
             capturedAt,
             attendanceId,
             attendanceDate: attendanceDate ?? capturedAt,
+            deviceId,
           })
 
           if (attendanceId) setPendingEvidence({ attendanceId, attendanceDate: attendanceDate ?? new Date(), eventType: actionToSubmit, clientEventId })
@@ -208,9 +239,54 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
           <Tag color={effectiveAction === 'clockIn' ? 'blue' : 'orange'}>{actionLabel}</Tag>
         </div>
         <Divider />
-        <AntSteps size="small" current={capturedPhoto ? 2 : 1} items={[{ title: 'Open camera' }, { title: 'Take selfie' }, { title: 'Review & submit' }]} />
+        <AntSteps
+          size="small"
+          current={identityConfirmed ? (capturedPhoto ? 3 : 2) : 0}
+          items={[
+            { title: 'Confirm identity' },
+            { title: 'Open camera' },
+            { title: 'Take selfie' },
+            { title: 'Review & submit' },
+          ]}
+        />
         <div className="camera-modal-body">
-          {effectiveAction ? (
+          {effectiveAction && !identityConfirmed ? (
+            <Space direction="vertical" size={16} className="full-width">
+              {sharedDeviceBlock && (
+                <Alert
+                  type="error"
+                  showIcon
+                  message="This device has unsynced attendance for another employee."
+                  description="Sync that attendance first or ask a manager. New attendance is blocked to prevent shared-phone identity mistakes."
+                />
+              )}
+              <Alert
+                type={navigator.onLine ? 'info' : 'warning'}
+                showIcon
+                message={navigator.onLine ? 'Server verification will be attempted now.' : 'Offline capture is device evidence only.'}
+                description={navigator.onLine ? 'Confirm the identity before opening the camera.' : 'This is not final attendance until it syncs and passes server validation.'}
+              />
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="Employee">{employeeName}</Descriptions.Item>
+                <Descriptions.Item label="Employee no.">{employeeNumber}</Descriptions.Item>
+                <Descriptions.Item label="Action">{actionLabel}</Descriptions.Item>
+                <Descriptions.Item label="Station">{branchName}</Descriptions.Item>
+                <Descriptions.Item label="Device">{deviceId}</Descriptions.Item>
+                <Descriptions.Item label="Connection">{navigator.onLine ? 'Online' : 'Offline'}</Descriptions.Item>
+                <Descriptions.Item label="Current time">{formatDateTime(new Date())}</Descriptions.Item>
+              </Descriptions>
+              <Space wrap>
+                <Button onClick={onClose} disabled={submitting}>Cancel</Button>
+                <Button
+                  type="primary"
+                  disabled={Boolean(sharedDeviceBlock)}
+                  onClick={() => setIdentityConfirmed(true)}
+                >
+                  Yes, this is me
+                </Button>
+              </Space>
+            </Space>
+          ) : effectiveAction ? (
             <AttendanceCamera
               actionLabel={actionLabel}
               watermarkLines={watermarkLines}

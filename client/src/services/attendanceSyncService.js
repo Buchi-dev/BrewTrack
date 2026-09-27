@@ -35,6 +35,7 @@ async function createAttendance(record) {
     clientEventId: record.id,
     capturedAt: record.capturedAt,
     wasOffline: true,
+    deviceId: record.deviceId,
   }
 
   const created = record.action === 'clockIn'
@@ -84,9 +85,14 @@ export async function syncOfflineAttendance({ userId = null } = {}) {
       await removeOfflineAttendanceRecord(record.id)
       synced += 1
     } catch (error) {
+      const message = error?.message ?? 'Unable to synchronize attendance.'
+      const status = /too old|manager|device clock|ahead of server|earlier than clock-in/i.test(message)
+        ? OFFLINE_ATTENDANCE_STATUSES.needsReview
+        : OFFLINE_ATTENDANCE_STATUSES.failed
+
       await updateOfflineAttendanceRecord(record.id, {
-        status: OFFLINE_ATTENDANCE_STATUSES.failed,
-        lastError: error?.message ?? 'Unable to synchronize attendance.',
+        status,
+        lastError: message,
       })
       failed += 1
     }

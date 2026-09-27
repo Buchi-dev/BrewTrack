@@ -629,6 +629,8 @@ export default function ManagerAttendancePage() {
                   <Tag color={needsOfflineReview(selectedRecord) ? 'red' : 'gold'}>
                     {needsOfflineReview(selectedRecord) ? 'Needs review' : 'Synced'}
                   </Tag>
+                  {selectedRecord?.clock_in_device_id && <Text>Clock-in device: {selectedRecord.clock_in_device_id}</Text>}
+                  {selectedRecord?.clock_out_device_id && <Text>Clock-out device: {selectedRecord.clock_out_device_id}</Text>}
                   {selectedRecord?.clock_in_sync_delay_seconds != null && (
                     <Text>Clock-in delay: {formatMinutes(Math.floor(selectedRecord.clock_in_sync_delay_seconds / 60))}</Text>
                   )}

@@ -89,6 +89,10 @@ function mergePendingAttendance(attendance, pendingRecords) {
 }
 
 function getPendingSyncMessage(records) {
+  if (records.some((record) => record.status === OFFLINE_ATTENDANCE_STATUSES.needsReview)) {
+    return 'Attendance is saved on this device, but it needs manager help before it can be accepted.'
+  }
+
   if (records.some((record) => record.status === OFFLINE_ATTENDANCE_STATUSES.failed)) {
     return 'Attendance is saved on this device, but sync needs another try.'
   }

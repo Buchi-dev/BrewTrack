@@ -2,6 +2,7 @@ alter table public.attendance_records
   add column if not exists clock_in_captured_at timestamptz,
   add column if not exists clock_in_synced_at timestamptz,
   add column if not exists clock_in_client_event_id uuid,
+  add column if not exists clock_in_device_id text,
   add column if not exists clock_in_was_offline boolean not null default false,
   add column if not exists clock_in_sync_delay_seconds integer,
   add column if not exists clock_in_requires_review boolean not null default false,
@@ -9,6 +10,7 @@ alter table public.attendance_records
   add column if not exists clock_out_captured_at timestamptz,
   add column if not exists clock_out_synced_at timestamptz,
   add column if not exists clock_out_client_event_id uuid,
+  add column if not exists clock_out_device_id text,
   add column if not exists clock_out_was_offline boolean not null default false,
   add column if not exists clock_out_sync_delay_seconds integer,
   add column if not exists clock_out_requires_review boolean not null default false,
@@ -27,7 +29,9 @@ create index if not exists attendance_records_offline_review_idx
   where clock_in_requires_review = true or clock_out_requires_review = true;
 
 drop function if exists public.clock_in(text, numeric, numeric);
+drop function if exists public.clock_in(text, numeric, numeric, uuid, timestamptz, boolean);
 drop function if exists public.clock_out(text, numeric, numeric);
+drop function if exists public.clock_out(text, numeric, numeric, uuid, timestamptz, boolean);
 
 create or replace function public.clock_in(
   p_clock_in_photo_path text default null,
@@ -35,7 +39,8 @@ create or replace function public.clock_in(
   p_clock_in_longitude numeric default null,
   p_client_event_id uuid default null,
   p_captured_at timestamptz default null,
-  p_was_offline boolean default false
+  p_was_offline boolean default false,
+  p_device_id text default null
 )
 returns jsonb
 language plpgsql
@@ -212,6 +217,7 @@ begin
     clock_in_captured_at,
     clock_in_synced_at,
     clock_in_client_event_id,
+    clock_in_device_id,
     clock_in_was_offline,
     clock_in_sync_delay_seconds,
     clock_in_requires_review,
@@ -232,6 +238,7 @@ begin
     p_captured_at,
     v_now,
     p_client_event_id,
+    nullif(btrim(p_device_id), ''),
     v_was_offline,
     v_sync_delay_seconds,
     v_requires_review,
@@ -265,7 +272,8 @@ create or replace function public.clock_out(
   p_clock_out_longitude numeric default null,
   p_client_event_id uuid default null,
   p_captured_at timestamptz default null,
-  p_was_offline boolean default false
+  p_was_offline boolean default false,
+  p_device_id text default null
 )
 returns jsonb
 language plpgsql
@@ -365,6 +373,7 @@ begin
     clock_out_captured_at = p_captured_at,
     clock_out_synced_at = v_now,
     clock_out_client_event_id = p_client_event_id,
+    clock_out_device_id = nullif(btrim(p_device_id), ''),
     clock_out_was_offline = v_was_offline,
     clock_out_sync_delay_seconds = v_sync_delay_seconds,
     clock_out_requires_review = v_requires_review,
@@ -405,6 +414,7 @@ begin
           'captured_at', new.clock_in_captured_at,
           'synced_at', new.clock_in_synced_at,
           'client_event_id', new.clock_in_client_event_id,
+          'device_id', new.clock_in_device_id,
           'was_offline', new.clock_in_was_offline,
           'sync_delay_seconds', new.clock_in_sync_delay_seconds,
           'requires_review', new.clock_in_requires_review,
@@ -437,6 +447,7 @@ begin
         'captured_at', new.clock_in_captured_at,
         'synced_at', new.clock_in_synced_at,
         'client_event_id', new.clock_in_client_event_id,
+        'device_id', new.clock_in_device_id,
         'was_offline', new.clock_in_was_offline,
         'sync_delay_seconds', new.clock_in_sync_delay_seconds,
         'requires_review', new.clock_in_requires_review,
@@ -466,6 +477,7 @@ begin
         'captured_at', new.clock_out_captured_at,
         'synced_at', new.clock_out_synced_at,
         'client_event_id', new.clock_out_client_event_id,
+        'device_id', new.clock_out_device_id,
         'was_offline', new.clock_out_was_offline,
         'sync_delay_seconds', new.clock_out_sync_delay_seconds,
         'requires_review', new.clock_out_requires_review,
@@ -504,5 +516,5 @@ begin
 end;
 $$;
 
-grant execute on function public.clock_in(text, numeric, numeric, uuid, timestamptz, boolean) to authenticated;
-grant execute on function public.clock_out(text, numeric, numeric, uuid, timestamptz, boolean) to authenticated;
+grant execute on function public.clock_in(text, numeric, numeric, uuid, timestamptz, boolean, text) to authenticated;
+grant execute on function public.clock_out(text, numeric, numeric, uuid, timestamptz, boolean, text) to authenticated;

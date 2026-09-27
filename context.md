@@ -182,7 +182,7 @@ Routes are centralized in `client/src/constants/routes.js`.
 ## Employee Management
 
 Managers can list, search, filter, create, edit, and deactivate employee profiles from `ManagerEmployeesPage`.
-Adding an employee profile requires an existing Supabase Auth user id; secure Auth user invitation/creation remains outside the browser app so admin credentials are never exposed client-side.
+Adding an employee uses Supabase public email/password signup with a generated temporary password, then updates the linked BrewTrack profile. The app expects Supabase Auth email confirmations to be disabled so manager-created temporary-password accounts can sign in immediately.
 Deactivation is the supported removal path because historical attendance, schedule, and audit records reference profile rows.
 
 ## Attendance Flow

@@ -1348,6 +1348,31 @@ a {
   background: #fffaf3;
 }
 
+.employee-profile-modal .ant-modal-body {
+  padding-top: 12px;
+}
+
+.employee-profile-form .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.employee-profile-form .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+.employee-profile-form .ant-form-item-label > label {
+  height: auto;
+  font-size: 13px;
+}
+
+.employee-credentials-panel {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #edd6b8;
+  border-radius: 8px;
+  background: #fffaf3;
+}
+
 .dashboard-triage-alert {
   margin-top: 16px;
 }

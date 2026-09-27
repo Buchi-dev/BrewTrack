@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js'
+import { env, isSupabaseConfigured } from '../../config/env.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getRange, normalizeSearch } from '../query.js'
 
@@ -87,17 +89,37 @@ export async function saveEmployeeProfile(employeeId, values) {
 }
 
 export async function createEmployeeProfile(values) {
-  if (!supabase) return null
+  if (!supabase || !isSupabaseConfigured) return null
 
-  const payload = {
-    id: values.auth_user_id.trim(),
-    ...getEmployeePayload(values),
-  }
+  const signupClient = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
 
-  const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select().single()
-  if (error) throw error
+  const payload = getEmployeePayload(values)
+  const { data: authData, error: authError } = await signupClient.auth.signUp({
+    email: values.email.trim(),
+    password: values.temp_password,
+    options: {
+      data: {
+        first_name: payload.first_name,
+        middle_name: payload.middle_name,
+        last_name: payload.last_name,
+        employee_number: payload.employee_number,
+        phone: payload.phone,
+      },
+    },
+  })
 
-  return data
+  if (authError) throw authError
+
+  const employeeId = authData.user?.id
+  if (!employeeId) throw new Error('Unable to create the employee account.')
+
+  return saveEmployeeProfile(employeeId, payload)
 }
 
 export async function deactivateEmployeeProfile(employeeId) {

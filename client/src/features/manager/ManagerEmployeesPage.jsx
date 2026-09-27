@@ -1,4 +1,4 @@
-import { EditOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserDeleteOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, TeamOutlined, UserDeleteOutlined, UserSwitchOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Col, Empty, Form, Input, Modal, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -13,7 +13,6 @@ import {
 const { Text } = Typography
 const PAGE_SIZE = 10
 const initialEmployeeFilters = { page: 1, pageSize: PAGE_SIZE, search: '', status: null }
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -33,6 +32,23 @@ function getStatusColor(status) {
   return 'default'
 }
 
+function generateTemporaryPassword() {
+  const groups = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789']
+  const allCharacters = groups.join('')
+  const randomIndex = (max) => {
+    const values = new Uint32Array(1)
+    crypto.getRandomValues(values)
+    return values[0] % max
+  }
+  const password = groups.map((group) => group[randomIndex(group.length)])
+
+  while (password.length < 12) {
+    password.push(allCharacters[randomIndex(allCharacters.length)])
+  }
+
+  return password.sort(() => randomIndex(2) - 0.5).join('')
+}
+
 export default function ManagerEmployeesPage() {
   const { message } = App.useApp()
   const [form] = Form.useForm()
@@ -44,6 +60,7 @@ export default function ManagerEmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [filters, setFilters] = useState(initialEmployeeFilters)
+  const isEditing = Boolean(editingEmployee)
 
   const employeeSummary = useMemo(
     () => ({
@@ -95,7 +112,8 @@ export default function ManagerEmployeesPage() {
     setEditingEmployee(employee)
     setModalOpen(true)
     form.setFieldsValue({
-      auth_user_id: employee?.id,
+      email: '',
+      temp_password: employee ? undefined : generateTemporaryPassword(),
       first_name: employee?.first_name,
       middle_name: employee?.middle_name,
       last_name: employee?.last_name,
@@ -110,6 +128,25 @@ export default function ManagerEmployeesPage() {
     setModalOpen(false)
     setEditingEmployee(null)
     form.resetFields()
+  }
+
+  async function copyCredentials() {
+    const { email, temp_password: tempPassword } = form.getFieldsValue(['email', 'temp_password'])
+    if (!email || !tempPassword) {
+      message.warning('Enter an email and temporary password first.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(`Email: ${email}\nTemporary password: ${tempPassword}`)
+      message.success('Login details copied.')
+    } catch {
+      message.error('Unable to copy login details.')
+    }
+  }
+
+  function refreshTemporaryPassword() {
+    form.setFieldValue('temp_password', generateTemporaryPassword())
   }
 
   const columns = [
@@ -183,7 +220,7 @@ export default function ManagerEmployeesPage() {
         message.success('Employee updated.')
       } else {
         await createEmployeeProfile(values)
-        message.success('Employee added.')
+        message.success('Employee account created. Send the email and temporary password to the staff.')
       }
       closeEditor()
       loadData(filters)
@@ -294,59 +331,93 @@ export default function ManagerEmployeesPage() {
       </Card>
 
       <Modal
+        className="employee-profile-modal"
         title={editingEmployee ? 'Edit employee' : 'Add employee'}
         open={modalOpen}
         onCancel={closeEditor}
         onOk={handleSave}
         confirmLoading={saving}
         okText={editingEmployee ? 'Save changes' : 'Add employee'}
+        width={620}
       >
-        <Form form={form} layout="vertical" requiredMark={false}>
-          {!editingEmployee && (
-            <Alert
-              className="manager-page-alert"
-              type="info"
-              showIcon
-              title="Use the Supabase Auth user id"
-              description="Create or invite the user in Supabase Auth first, then paste that user's id here to manage their BrewTrack profile."
-            />
+        <Form className="employee-profile-form" form={form} layout="vertical" requiredMark={false}>
+          {!isEditing && (
+            <div className="employee-credentials-panel">
+              <Row gutter={[10, 8]}>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="email"
+                    label="Email"
+                    rules={[
+                      { required: true, message: 'Enter an email.' },
+                      { type: 'email', message: 'Enter a valid email.' },
+                    ]}
+                  >
+                    <Input autoComplete="off" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="temp_password"
+                    label="Temporary password"
+                    rules={[
+                      { required: true, message: 'Generate or enter a temporary password.' },
+                      { min: 8, message: 'Use at least 8 characters.' },
+                      { pattern: /^[A-Za-z0-9]+$/, message: 'Use letters and numbers only.' },
+                    ]}
+                  >
+                    <Input.Password autoComplete="new-password" prefix={<KeyOutlined />} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Space wrap size={8}>
+                <Button icon={<ReloadOutlined />} onClick={refreshTemporaryPassword}>
+                  Generate
+                </Button>
+                <Button icon={<CopyOutlined />} onClick={copyCredentials}>
+                  Copy login details
+                </Button>
+              </Space>
+            </div>
           )}
-          <Form.Item
-            name="auth_user_id"
-            label="Auth user id"
-            rules={[
-              { required: !editingEmployee, message: 'Enter the Supabase Auth user id.' },
-              {
-                validator: (_, value) => {
-                  if (editingEmployee || !value || uuidPattern.test(value.trim())) return Promise.resolve()
-                  return Promise.reject(new Error('Enter a valid UUID.'))
-                },
-              },
-            ]}
-          >
-            <Input disabled={Boolean(editingEmployee)} placeholder="00000000-0000-0000-0000-000000000000" />
-          </Form.Item>
-          <Form.Item name="first_name" label="First name" rules={[{ required: true, message: 'Enter a first name.' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="middle_name" label="Middle name">
-            <Input />
-          </Form.Item>
-          <Form.Item name="last_name" label="Last name" rules={[{ required: true, message: 'Enter a last name.' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="employee_number" label="Employee number">
-            <Input />
-          </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <Input />
-          </Form.Item>
-          <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Choose a role.' }]}>
-            <Select options={roleOptions} />
-          </Form.Item>
-          <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Choose a status.' }]}>
-            <Select options={statusOptions} />
-          </Form.Item>
+
+          <Row gutter={[10, 0]}>
+            <Col xs={24} md={12}>
+              <Form.Item name="first_name" label="First name" rules={[{ required: true, message: 'Enter a first name.' }]}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="last_name" label="Last name" rules={[{ required: true, message: 'Enter a last name.' }]}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="middle_name" label="Middle name">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="employee_number" label="Employee number">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="phone" label="Phone">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Choose a role.' }]}>
+                <Select options={roleOptions} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Choose a status.' }]}>
+                <Select options={statusOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </>

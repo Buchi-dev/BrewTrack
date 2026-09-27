@@ -1,0 +1,20 @@
+{
+  "name": "BrewTrack Attendance",
+  "short_name": "BrewTrack",
+  "description": "Attendance and station schedule verification for BigBrew operations.",
+  "start_url": "/staff",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f4ef",
+  "theme_color": "#5a351f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}

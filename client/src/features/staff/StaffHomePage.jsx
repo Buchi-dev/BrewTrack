@@ -27,6 +27,10 @@ import {
   subscribeToAttendanceSyncUpdates,
 } from '../../services/offlineAttendanceService.js'
 import {
+  cacheTodaySchedule,
+  getCachedTodaySchedule,
+} from '../../services/offlineReadinessService.js'
+import {
   getStationLabel,
   getStationRoleLabel,
   getTodayStationAssignment,
@@ -113,8 +117,10 @@ export default function StaffHomePage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
+  const [offlineNotice, setOfflineNotice] = useState(null)
   const [cameraOpen, setCameraOpen] = useState(false)
 
+  const profileId = profile?.id
   const firstName = profile?.first_name || 'there'
   const branchName = todaySchedule ? getStationLabel(todaySchedule) : 'No station scheduled'
   const displayAttendance = useMemo(
@@ -123,18 +129,19 @@ export default function StaffHomePage() {
   )
 
   const loadPendingRecords = useCallback(async () => {
-    if (!profile?.id) {
+    if (!profileId) {
       setPendingRecords([])
       return
     }
 
-    const records = await getOfflineAttendanceRecords({ userId: profile?.id })
+    const records = await getOfflineAttendanceRecords({ userId: profileId })
     setPendingRecords(records)
-  }, [profile?.id])
+  }, [profileId])
 
   const loadSummary = useCallback(async () => {
     setLoading(true)
     setErrorMessage(null)
+    setOfflineNotice(null)
 
     try {
       const [today, history, schedule] = await Promise.all([
@@ -146,25 +153,38 @@ export default function StaffHomePage() {
       setTodayAttendance(today)
       setRecentRecords(history.records)
       setTodaySchedule(schedule)
+      if (schedule) cacheTodaySchedule({ profileId, schedule })
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to load attendance summary.')
+      if (!navigator.onLine && profileId) {
+        const cachedSchedule = getCachedTodaySchedule(profileId)
+        setTodayAttendance(null)
+        setRecentRecords([])
+        setTodaySchedule(cachedSchedule)
+        setOfflineNotice(
+          cachedSchedule
+            ? 'Offline mode is using today’s last synced station schedule on this device.'
+            : 'Attendance is unavailable offline on this device. Connect to internet first or ask your manager.',
+        )
+      } else {
+        setErrorMessage(error.message || 'Unable to load attendance summary.')
+      }
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [profileId])
 
   const retrySync = useCallback(async () => {
-    if (!profile?.id) return
+    if (!profileId) return
 
     setSyncing(true)
 
     try {
-      await syncOfflineAttendance({ userId: profile?.id })
+      await syncOfflineAttendance({ userId: profileId })
       await Promise.all([loadPendingRecords(), loadSummary()])
     } finally {
       setSyncing(false)
     }
-  }, [loadPendingRecords, loadSummary, profile?.id])
+  }, [loadPendingRecords, loadSummary, profileId])
 
   useEffect(() => {
     let active = true
@@ -179,10 +199,26 @@ export default function StaffHomePage() {
         setTodayAttendance(today)
         setRecentRecords(history.records)
         setTodaySchedule(schedule)
+        if (schedule) cacheTodaySchedule({ profileId, schedule })
         setErrorMessage(null)
+        setOfflineNotice(null)
       })
       .catch((error) => {
         if (!active) return
+        if (!navigator.onLine && profileId) {
+          const cachedSchedule = getCachedTodaySchedule(profileId)
+          setTodayAttendance(null)
+          setRecentRecords([])
+          setTodaySchedule(cachedSchedule)
+          setOfflineNotice(
+            cachedSchedule
+              ? 'Offline mode is using today’s last synced station schedule on this device.'
+              : 'Attendance is unavailable offline on this device. Connect to internet first or ask your manager.',
+          )
+          setErrorMessage(null)
+          return
+        }
+
         setErrorMessage(error.message || 'Unable to load attendance summary.')
       })
       .finally(() => {
@@ -192,7 +228,7 @@ export default function StaffHomePage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [profileId])
 
   useEffect(() => {
     const unsubscribe = subscribeToAttendanceSyncUpdates(loadPendingRecords)
@@ -215,6 +251,7 @@ export default function StaffHomePage() {
   const completedThisMonth = useMemo(() => getCompletedCount(recentRecords), [recentRecords])
   const nextAction = getNextActionText(displayAttendance)
   const isComplete = nextAction === 'View attendance'
+  const canOpenAttendance = navigator.onLine || Boolean(todaySchedule)
   const trainer = todaySchedule?.team?.find((member) => member.employeeId === todaySchedule.trainerEmployeeId)
   const trainee = todaySchedule?.team?.find((member) => member.trainerEmployeeId === profile?.id)
 
@@ -231,6 +268,15 @@ export default function StaffHomePage() {
 
       {errorMessage && (
         <Alert className="section-card" type="error" showIcon message={errorMessage} />
+      )}
+
+      {offlineNotice && (
+        <Alert
+          className="section-card"
+          type={todaySchedule ? 'warning' : 'error'}
+          showIcon
+          message={offlineNotice}
+        />
       )}
 
       {pendingRecords.length > 0 && (
@@ -273,7 +319,13 @@ export default function StaffHomePage() {
           <Text type="secondary">{isComplete ? 'Attendance complete' : 'One clear selfie'}</Text>
         </div>
         <div className="staff-dashboard-hero-button">
-          <Button type="primary" size="large" icon={<CameraOutlined />} onClick={() => setCameraOpen(true)}>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CameraOutlined />}
+            disabled={!canOpenAttendance}
+            onClick={() => setCameraOpen(true)}
+          >
             {nextAction}
           </Button>
         </div>

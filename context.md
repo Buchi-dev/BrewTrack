@@ -11,6 +11,7 @@ The frontend lives in `client/`. Supabase configuration and reproducible databas
 ## Current Architecture
 
 - Frontend: React 19, Vite 8, JavaScript modules, Ant Design 6, React Router 7, Supabase JS SDK.
+- Install mode: PWA manifest and service worker allow the app shell to open from a home-screen install after a prior online visit.
 - Backend: Supabase Auth, Postgres tables, RLS policies, storage bucket policies, and RPC functions defined through SQL migrations.
 - Authentication model: Supabase Auth session plus a `profiles` row. The profile contains app role and account status.
 - Roles: `manager` and `staff`.
@@ -33,6 +34,8 @@ BrewTrack/
     public/
       favicon.svg
       icons.svg
+      manifest.webmanifest
+      sw.js
     src/
       main.jsx
       App.jsx
@@ -93,6 +96,7 @@ BrewTrack/
         attendanceService.js
         attendanceSyncService.js
         authService.js
+        offlineReadinessService.js
         offlineAttendanceService.js
         profileService.js
         query.js
@@ -148,6 +152,7 @@ BrewTrack/
 - `client/src/lib/supabaseClient.js`: Creates the Supabase client when env vars are present. Returns `null` when not configured.
 - `client/src/services/attendanceService.js`: Staff attendance RPC calls, selfie storage paths/uploads, selfie attachment RPC, signed URL helpers, history loading, and user-facing attendance error normalization.
 - `client/src/services/attendanceSyncService.js`: Replays pending local attendance records, creates the server attendance record when needed, uploads/attaches selfies, and clears synced queue items.
+- `client/src/services/offlineReadinessService.js`: Caches the last trusted active profile and today’s schedule for strict offline attendance readiness.
 - `client/src/services/offlineAttendanceService.js`: IndexedDB-backed queue for locally saved attendance selfies and pending sync state.
 - `client/src/services/manager/stationScheduleService.js`: Station schedule CRUD, role labels, station labels, time formatting, and today's station assignment RPC.
 - `client/src/index.css`: Global styling for layouts, feature pages, camera flow, schedules, and responsive behavior.
@@ -187,6 +192,8 @@ If the browser is offline before submit, or the network/storage step fails, the 
 Offline sync is hardened server-side. Each queued attendance action uses a client-generated event UUID for idempotent retries. The database stores captured time separately from synced time, rejects captured times that are too far in the future or more than 18 hours old, and flags records synced after more than 2 hours for manager review.
 
 Staff must confirm identity before the camera opens. The confirmation shows employee name, employee number, station, connection state, and device ID. Shared-phone safety is strict: if a device has unsynced attendance for another employee, new attendance capture is blocked until that record syncs or a manager intervenes.
+
+PWA offline attendance is allowed only after online preparation. The device must have a restored Supabase session, a cached active profile for the same user, and today’s cached station schedule. Without that cached schedule, offline attendance is blocked with an instruction to connect to the internet or ask a manager.
 
 Selfie path format:
 

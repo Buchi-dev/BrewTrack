@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { isSupabaseConfigured } from '../../config/env.js'
 import { supabase } from '../../lib/supabaseClient.js'
+import { cacheOfflineProfile, getCachedOfflineProfile } from '../../services/offlineReadinessService.js'
 import { getCurrentProfile } from '../../services/profileService.js'
 import { AuthContext } from './authContext.js'
 
@@ -16,8 +17,22 @@ export function AuthProvider({ children }) {
       return
     }
 
-    const currentProfile = await getCurrentProfile(user.id)
-    setProfile(currentProfile)
+    try {
+      const currentProfile = await getCurrentProfile(user.id)
+      if (currentProfile?.status === 'active') cacheOfflineProfile(currentProfile)
+      setProfile(currentProfile)
+      return
+    } catch (error) {
+      if (!navigator.onLine) {
+        const cachedProfile = getCachedOfflineProfile(user.id)
+        if (cachedProfile?.status === 'active') {
+          setProfile(cachedProfile)
+          return
+        }
+      }
+
+      throw error
+    }
   }, [])
 
   useEffect(() => {

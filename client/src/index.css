@@ -2522,6 +2522,57 @@ a {
     display: none;
   }
 
+  .app-layout-manager .page-header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .app-layout-manager .page-header .eyebrow {
+    display: none;
+  }
+
+  .app-layout-manager .page-header h1.ant-typography {
+    margin: 0 0 3px;
+    font-size: 25px;
+    line-height: 1.12;
+  }
+
+  .app-layout-manager .page-header .ant-typography-secondary {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-bottom: 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .app-layout-manager .page-actions {
+    width: 100%;
+    padding-top: 2px;
+  }
+
+  .app-layout-manager .page-actions .ant-space,
+  .app-layout-manager .page-actions .ant-space-item,
+  .app-layout-manager .page-actions .ant-btn {
+    width: 100%;
+  }
+
+  .app-layout-manager .page-actions .ant-btn {
+    min-height: 38px;
+  }
+
+  .app-layout-manager .app-content > .ant-card {
+    border-color: #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .app-layout-manager .app-content > .ant-card > .ant-card-body {
+    padding: 14px;
+  }
+
   .manager-mobile-overview {
     display: grid;
     gap: 3px;
@@ -2862,13 +2913,33 @@ a {
 
   .manager-control-panel {
     display: grid;
-    gap: 12px;
-    padding: 12px;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 10px;
   }
 
   .manager-control-panel .ant-segmented {
     width: 100%;
-    overflow-x: auto;
+    overflow: visible;
+  }
+
+  .manager-control-panel .ant-segmented-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .manager-control-panel .ant-segmented-item {
+    min-width: 0;
+    text-align: center;
+  }
+
+  .manager-control-panel .ant-segmented-item-label {
+    overflow: hidden;
+    min-height: 34px;
+    padding-inline: 7px;
+    line-height: 34px;
+    text-overflow: ellipsis;
   }
 
   .manager-filter-note {
@@ -2876,16 +2947,67 @@ a {
     padding-top: 0;
   }
 
+  .manager-page-alert {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
   .manager-page-alert .ant-alert-action {
     margin-inline-start: 0;
   }
 
+  .manager-page-alert .ant-alert-message {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .manager-page-alert .ant-alert-title {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .manager-page-alert .ant-alert-description {
+    display: none !important;
+  }
+
+  .manager-page-alert .ant-alert-icon {
+    margin-inline-end: 8px;
+  }
+
+  .manager-page-alert.ant-alert-with-description {
+    align-items: center;
+  }
+
+  .manager-page-alert .ant-alert-section {
+    min-width: 0;
+  }
+
+  .manager-summary-grid {
+    margin-bottom: 12px;
+  }
+
   .manager-summary-card .ant-card-body {
-    padding: 12px;
+    min-height: 84px;
+    padding: 11px;
+  }
+
+  .manager-summary-card .ant-statistic-title {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
   .manager-summary-card .ant-statistic-content {
-    font-size: 20px;
+    font-size: 21px;
+    line-height: 1.1;
+  }
+
+  .manager-summary-card .ant-statistic-content-prefix {
+    margin-inline-end: 4px;
+  }
+
+  .summary-grid {
+    margin-bottom: 12px;
   }
 
   .table-toolbar .ant-space-item,
@@ -2904,6 +3026,57 @@ a {
   .table-toolbar .ant-input-search .ant-input-group-addon .ant-btn {
     width: 44px !important;
     min-width: 44px !important;
+  }
+
+  .app-layout-manager .ant-table-wrapper {
+    margin-top: 4px;
+  }
+
+  .app-layout-manager .ant-table-thead > tr > th,
+  .app-layout-manager .ant-table-tbody > tr > td {
+    padding: 10px;
+  }
+
+  .settings-readiness-card .ant-card-body,
+  .settings-form-card .ant-card-body {
+    padding: 14px;
+  }
+
+  .settings-readiness-card .ant-space {
+    gap: 10px !important;
+  }
+
+  .settings-readiness-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 19px;
+  }
+
+  .settings-readiness-card h3.ant-typography {
+    margin: 4px 0 6px;
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .settings-readiness-card .ant-typography-secondary {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .settings-readiness-card .ant-divider {
+    margin: 8px 0;
+  }
+
+  .settings-section-heading {
+    margin: 8px 0 10px;
+  }
+
+  .settings-section-heading h4.ant-typography {
+    font-size: 17px;
   }
 
   .schedule-toolbar {

@@ -57,6 +57,7 @@ const initialFilters = {
   startDate: null,
   endDate: null,
   missingClockOut: false,
+  needsOfflineReview: false,
 }
 
 const statusOptions = [
@@ -68,7 +69,10 @@ const statusOptions = [
   { value: 'excused', label: 'Excused' },
 ]
 
-const followUpOptions = [{ value: 'missingClockOut', label: 'Missing clock-out' }]
+const followUpOptions = [
+  { value: 'missingClockOut', label: 'Missing clock-out' },
+  { value: 'offlineReview', label: 'Offline review' },
+]
 
 function getStatusColor(record) {
   if (record?.status === 'completed') return 'green'
@@ -84,6 +88,14 @@ function getStatusLabel(record) {
   if (record?.status === 'completed') return 'Completed'
   if (record?.status === 'late' || record?.late_minutes > 0) return 'Late'
   return record?.status || 'Recorded'
+}
+
+function needsOfflineReview(record) {
+  return Boolean(record?.clock_in_requires_review || record?.clock_out_requires_review)
+}
+
+function hasOfflineSync(record) {
+  return Boolean(record?.clock_in_was_offline || record?.clock_out_was_offline)
 }
 
 function formatMinutes(value) {
@@ -214,6 +226,7 @@ export default function ManagerAttendancePage() {
       working: rows.filter((record) => record.clock_in_at && !record.clock_out_at).length,
       late: rows.filter((record) => record.status === 'late' || Number(record.late_minutes ?? 0) > 0).length,
       missingClockOut: rows.filter((record) => record.clock_in_at && !record.clock_out_at).length,
+      offlineReview: rows.filter(needsOfflineReview).length,
     }),
     [count, rows],
   )
@@ -226,6 +239,7 @@ export default function ManagerAttendancePage() {
         filters.status,
         filters.startDate || filters.endDate,
         filters.missingClockOut,
+        filters.needsOfflineReview,
       ].filter(Boolean).length,
     [filters],
   )
@@ -243,21 +257,21 @@ export default function ManagerAttendancePage() {
 
   function applyQuickView(value) {
     if (value === 'needsFollowUp') {
-      applyFilters({ missingClockOut: true, status: null })
+      applyFilters({ missingClockOut: true, needsOfflineReview: false, status: null })
       return
     }
 
     if (value === 'late') {
-      applyFilters({ missingClockOut: false, status: 'late' })
+      applyFilters({ missingClockOut: false, needsOfflineReview: false, status: 'late' })
       return
     }
 
     if (value === 'completed') {
-      applyFilters({ missingClockOut: false, status: 'completed' })
+      applyFilters({ missingClockOut: false, needsOfflineReview: false, status: 'completed' })
       return
     }
 
-    applyFilters({ missingClockOut: false, status: null })
+    applyFilters({ missingClockOut: false, needsOfflineReview: false, status: null })
   }
 
   async function openDetails(record) {
@@ -364,7 +378,13 @@ export default function ManagerAttendancePage() {
     {
       title: 'Status',
       key: 'status',
-      render: (_, record) => <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>,
+      render: (_, record) => (
+        <Space size={4} wrap>
+          <Tag color={getStatusColor(record)}>{getStatusLabel(record)}</Tag>
+          {needsOfflineReview(record) && <Tag color="red">Review</Tag>}
+          {!needsOfflineReview(record) && hasOfflineSync(record) && <Tag color="gold">Offline</Tag>}
+        </Space>
+      ),
     },
     {
       title: 'Late',
@@ -474,6 +494,16 @@ export default function ManagerAttendancePage() {
           />
         )}
 
+        {pageSummary.offlineReview > 0 && (
+          <Alert
+            className="manager-page-alert"
+            type="error"
+            showIcon
+            title={`${pageSummary.offlineReview} visible offline record${pageSummary.offlineReview === 1 ? '' : 's'} need review`}
+            description="These records synced after a long delay. Confirm the selfie, event history, and staff explanation before approving payroll decisions."
+          />
+        )}
+
         <Row gutter={[12, 12]} className="manager-summary-grid">
           <Col xs={12} md={6}>
             <Card size="small" className="manager-summary-card">
@@ -538,8 +568,12 @@ export default function ManagerAttendancePage() {
             placeholder="Follow-up"
             allowClear
             options={followUpOptions}
-            value={filters.missingClockOut ? 'missingClockOut' : null}
-            onChange={(value) => applyFilters({ missingClockOut: value === 'missingClockOut' })}
+            value={filters.missingClockOut ? 'missingClockOut' : filters.needsOfflineReview ? 'offlineReview' : null}
+            onChange={(value) =>
+              applyFilters({
+                missingClockOut: value === 'missingClockOut',
+                needsOfflineReview: value === 'offlineReview',
+              })}
             style={{ minWidth: 190 }}
           />
           <Button onClick={resetFilters}>Reset</Button>
@@ -589,6 +623,34 @@ export default function ManagerAttendancePage() {
             <Descriptions.Item label="Status">
               <Tag color={getStatusColor(selectedRecord)}>{getStatusLabel(selectedRecord)}</Tag>
             </Descriptions.Item>
+            <Descriptions.Item label="Offline sync">
+              {hasOfflineSync(selectedRecord) ? (
+                <Space wrap>
+                  <Tag color={needsOfflineReview(selectedRecord) ? 'red' : 'gold'}>
+                    {needsOfflineReview(selectedRecord) ? 'Needs review' : 'Synced'}
+                  </Tag>
+                  {selectedRecord?.clock_in_sync_delay_seconds != null && (
+                    <Text>Clock-in delay: {formatMinutes(Math.floor(selectedRecord.clock_in_sync_delay_seconds / 60))}</Text>
+                  )}
+                  {selectedRecord?.clock_out_sync_delay_seconds != null && (
+                    <Text>Clock-out delay: {formatMinutes(Math.floor(selectedRecord.clock_out_sync_delay_seconds / 60))}</Text>
+                  )}
+                </Space>
+              ) : '--'}
+            </Descriptions.Item>
+            {(selectedRecord?.clock_in_review_reason || selectedRecord?.clock_out_review_reason) && (
+              <Descriptions.Item label="Review reason">
+                {[selectedRecord?.clock_in_review_reason, selectedRecord?.clock_out_review_reason].filter(Boolean).join(' ')}
+              </Descriptions.Item>
+            )}
+            {hasOfflineSync(selectedRecord) && (
+              <>
+                <Descriptions.Item label="Clock-in captured">{formatDateTime(selectedRecord?.clock_in_captured_at)}</Descriptions.Item>
+                <Descriptions.Item label="Clock-in synced">{formatDateTime(selectedRecord?.clock_in_synced_at)}</Descriptions.Item>
+                <Descriptions.Item label="Clock-out captured">{formatDateTime(selectedRecord?.clock_out_captured_at)}</Descriptions.Item>
+                <Descriptions.Item label="Clock-out synced">{formatDateTime(selectedRecord?.clock_out_synced_at)}</Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label="Notes">{selectedRecord?.notes || '--'}</Descriptions.Item>
           </Descriptions>
 

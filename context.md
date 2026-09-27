@@ -184,6 +184,8 @@ The app keeps track of pending evidence so a processed attendance time can still
 
 If the browser is offline before submit, or the network/storage step fails, the staff dashboard treats the clock action as locally recorded and shows a pending sync state. Pending records are stored in IndexedDB and retried when the app opens, when internet returns, or when staff taps retry.
 
+Offline sync is hardened server-side. Each queued attendance action uses a client-generated event UUID for idempotent retries. The database stores captured time separately from synced time, rejects captured times that are too far in the future or more than 18 hours old, and flags records synced after more than 2 hours for manager review.
+
 Selfie path format:
 
 ```text
@@ -214,7 +216,7 @@ Main tables:
 - `employee_branches`: Staff-to-branch assignments with a single primary branch per employee.
 - `work_schedules`: Legacy/general weekly schedules by employee, branch, and day of week.
 - `station_schedule_assignments`: Daily station staffing schedule used by current clock-in rules.
-- `attendance_records`: Clock-in/out records, photo paths, location, scheduled times, late/worked minutes, status, notes.
+- `attendance_records`: Clock-in/out records, photo paths, location, scheduled times, captured/synced offline audit fields, late/worked minutes, status, notes.
 - `attendance_events`: Event stream for attendance changes.
 - `audit_logs`: Manager/audited operational changes.
 - `app_settings`: JSON settings such as organization name, default timezone, grace period, location/geofence toggles, and selfie quality.
@@ -243,6 +245,7 @@ Security highlights:
 - `20260926010000_initial_schema.sql`: Main schema, indexes, triggers, RLS policies, storage bucket/policies, attendance RPCs, dashboard RPC, and station assignment tables/functions.
 - `20260926013000_clock_in_from_station_schedule.sql`: Replaces `clock_in` so clock-in depends on today's station schedule assignment instead of only branch assignment.
 - `20260926014000_allow_staff_station_reads_for_attendance.sql`: Expands branch read policy so staff can read station/branch rows tied to their station schedule or attendance records.
+- `20260927010000_harden_offline_attendance_sync.sql`: Adds offline captured/synced audit columns, idempotent client event IDs, bounded captured-time validation, delayed-sync review flags, and hardened `clock_in`/`clock_out` RPC signatures.
 
 ## Common Commands
 

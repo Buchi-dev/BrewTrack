@@ -33,6 +33,10 @@ export function getAttendanceErrorMessage(error, fallback = 'Unable to complete 
     return 'You do not have a station scheduled for today. Please contact a manager.'
   }
 
+  if (/device clock|captured.*server time|too old to synchronize|earlier than clock-in/i.test(message)) {
+    return message
+  }
+
   if (/permission|policy|row-level security|rls|forbidden|not authorized/i.test(message)) {
     return 'Your account does not have permission to perform this attendance action.'
   }
@@ -254,26 +258,46 @@ export async function getStaffAttendanceHistory({ page = 1, pageSize = 10 } = {}
   }
 }
 
-export async function clockIn({ photoPath = null, latitude = null, longitude = null } = {}) {
+export async function clockIn({
+  photoPath = null,
+  latitude = null,
+  longitude = null,
+  clientEventId = null,
+  capturedAt = null,
+  wasOffline = false,
+} = {}) {
   if (!supabase) return null
 
   const { data, error } = await supabase.rpc('clock_in', {
     p_clock_in_photo_path: photoPath,
     p_clock_in_latitude: latitude,
     p_clock_in_longitude: longitude,
+    p_client_event_id: clientEventId,
+    p_captured_at: capturedAt,
+    p_was_offline: wasOffline,
   })
 
   if (error) throw error
   return data
 }
 
-export async function clockOut({ photoPath = null, latitude = null, longitude = null } = {}) {
+export async function clockOut({
+  photoPath = null,
+  latitude = null,
+  longitude = null,
+  clientEventId = null,
+  capturedAt = null,
+  wasOffline = false,
+} = {}) {
   if (!supabase) return null
 
   const { data, error } = await supabase.rpc('clock_out', {
     p_clock_out_photo_path: photoPath,
     p_clock_out_latitude: latitude,
     p_clock_out_longitude: longitude,
+    p_client_event_id: clientEventId,
+    p_captured_at: capturedAt,
+    p_was_offline: wasOffline,
   })
 
   if (error) throw error

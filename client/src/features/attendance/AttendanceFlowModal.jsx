@@ -107,10 +107,12 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
     let attendanceId = pendingEvidence?.attendanceId ?? null
     let attendanceDate = pendingEvidence?.attendanceDate ?? null
     const capturedAt = new Date().toISOString()
+    const clientEventId = pendingEvidence?.clientEventId ?? crypto.randomUUID()
 
     try {
       if (!navigator.onLine) {
         await queueOfflineAttendance({
+          id: clientEventId,
           userId: user?.id || profile?.id,
           action: actionToSubmit,
           photoBlob: result.blob,
@@ -132,7 +134,10 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
       }
 
       if (!pendingEvidence) {
-        const created = actionToSubmit === 'clockIn' ? await clockIn() : await clockOut()
+        const attendancePayload = { clientEventId, capturedAt, wasOffline: false }
+        const created = actionToSubmit === 'clockIn'
+          ? await clockIn(attendancePayload)
+          : await clockOut(attendancePayload)
         attendanceId = getAttendanceId(created)
         attendanceDate = getAttendanceDate(created)
       }
@@ -153,6 +158,7 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
       if (attendanceId || shouldQueueAttendance(error)) {
         try {
           await queueOfflineAttendance({
+            id: clientEventId,
             userId: user?.id || profile?.id,
             action: actionToSubmit,
             photoBlob: result.blob,
@@ -161,7 +167,7 @@ export default function AttendanceFlowModal({ open, attendance, assignedStationL
             attendanceDate: attendanceDate ?? capturedAt,
           })
 
-          if (attendanceId) setPendingEvidence({ attendanceId, attendanceDate: attendanceDate ?? new Date(), eventType: actionToSubmit })
+          if (attendanceId) setPendingEvidence({ attendanceId, attendanceDate: attendanceDate ?? new Date(), eventType: actionToSubmit, clientEventId })
           messageApi.success(`${ATTENDANCE_ACTIONS[actionToSubmit]} recorded. Selfie sync is pending.`)
           syncOfflineAttendance({ userId: user?.id || profile?.id })
           onSubmitted?.({ queued: true })

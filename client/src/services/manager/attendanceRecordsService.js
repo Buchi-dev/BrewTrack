@@ -13,6 +13,7 @@ export async function listManagerAttendanceRecords({
   endDate,
   lateOnly = false,
   missingClockOut = false,
+  needsOfflineReview = false,
 } = {}) {
   if (!supabase) return { rows: [], count: 0 }
 
@@ -38,6 +39,14 @@ export async function listManagerAttendanceRecords({
         worked_minutes,
         status,
         notes,
+        clock_in_was_offline,
+        clock_in_sync_delay_seconds,
+        clock_in_requires_review,
+        clock_in_review_reason,
+        clock_out_was_offline,
+        clock_out_sync_delay_seconds,
+        clock_out_requires_review,
+        clock_out_review_reason,
         profiles (
           id,
           first_name,
@@ -65,6 +74,7 @@ export async function listManagerAttendanceRecords({
   if (endDate) query = query.lte('attendance_date', endDate)
   if (lateOnly) query = query.gt('late_minutes', 0)
   if (missingClockOut) query = query.not('clock_in_at', 'is', null).is('clock_out_at', null)
+  if (needsOfflineReview) query = query.or('clock_in_requires_review.eq.true,clock_out_requires_review.eq.true')
 
   const { data, error, count } = await query
   if (error) throw error
@@ -134,6 +144,20 @@ export async function getManagerAttendanceDetails(attendanceId) {
         clock_in_longitude,
         clock_out_latitude,
         clock_out_longitude,
+        clock_in_captured_at,
+        clock_in_synced_at,
+        clock_in_client_event_id,
+        clock_in_was_offline,
+        clock_in_sync_delay_seconds,
+        clock_in_requires_review,
+        clock_in_review_reason,
+        clock_out_captured_at,
+        clock_out_synced_at,
+        clock_out_client_event_id,
+        clock_out_was_offline,
+        clock_out_sync_delay_seconds,
+        clock_out_requires_review,
+        clock_out_review_reason,
         scheduled_start,
         scheduled_end,
         late_minutes,
@@ -178,6 +202,10 @@ export async function listEmployeeAttendanceHistory({ employeeId, page = 1, page
         attendance_date,
         clock_in_at,
         clock_out_at,
+        clock_in_was_offline,
+        clock_in_requires_review,
+        clock_out_was_offline,
+        clock_out_requires_review,
         late_minutes,
         worked_minutes,
         status,

@@ -31,9 +31,15 @@ async function createAttendance(record) {
     }
   }
 
+  const payload = {
+    clientEventId: record.id,
+    capturedAt: record.capturedAt,
+    wasOffline: true,
+  }
+
   const created = record.action === 'clockIn'
-    ? await clockIn()
-    : await clockOut()
+    ? await clockIn(payload)
+    : await clockOut(payload)
 
   return {
     attendanceId: getAttendanceId(created),
